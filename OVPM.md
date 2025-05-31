@@ -192,20 +192,20 @@ sudo cp /var/lib/ovpm/ovpm.db /backup/ovpm.db.$(date +%Y%m%d)
 ### 1. ovpmd không start
 
 ```bash
-sudo journalctl -u ovpmd --no-pager -l
+   sudo journalctl -u ovpmd --no-pager -l
 ```
 
 ### 2. VPN client không connect được
 
 ```bash
-sudo ufw status
-sudo tail -f /var/log/openvpn/server.log
+   sudo ufw status
+   sudo tail -f /var/log/openvpn/server.log
 ```
 
 ### 3. Không thể tạo user
 
 ```bash
-sudo ovpm vpn status
+   sudo ovpm vpn status
 ```
 
 ## Kết luận
