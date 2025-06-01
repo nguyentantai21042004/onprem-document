@@ -210,7 +210,7 @@ WOL → ESXi Boot → Auto VMs → Auto Services (internal only)
 WOL → ESXi Boot → Auto VMs → Auto Services → External Access Ready!
 ```
 
-### 🌐 Recommended Next Guide: [Port Forwarding & Network Services](ForwardPort.md)
+### 🌐 Recommended Next Guide: [Port Forwarding & Network Services](Port-Forwarding.md) 
 
 **What you'll learn**:
 - ✅ **Service Exposure**: Router configuration để expose internal services
