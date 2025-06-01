@@ -30,24 +30,29 @@ Repository này chứa **documentation chi tiết** cho việc **tự build và 
    - Router configuration và security best practices
    - Production-ready service deployment
 
+4. **[OpenVPN Server với OVPM](OVPM.md)** - *Advanced Level*
+   - Secure VPN tunnel thay vì expose multiple ports
+   - Centralized user management và authentication
+   - Enterprise-grade remote access solution
+
 ### 🚀 Sắp tới (Roadmap)
 
-4. **Container Orchestration** - Docker & Kubernetes setup
-5. **Monitoring & Logging** - Prometheus, Grafana, ELK stack
-6. **CI/CD Pipeline** - GitLab/Jenkins automation
-7. **Network Services** - VPN, DNS, reverse proxy
-8. **Backup & Recovery** - Automated backup strategies
+5. **Container Orchestration** - Docker & Kubernetes setup
+6. **Monitoring & Logging** - Prometheus, Grafana, ELK stack
+7. **CI/CD Pipeline** - GitLab/Jenkins automation
+8. **Infrastructure as Code** - Terraform, Ansible
+9. **Backup & Recovery** - Automated backup strategies
 
 ## 🎓 Learning Path
 
 ### Cho người mới bắt đầu:
 ```
-Wake On LAN → ESXi Autostart → Port Forwarding → Container Basics → Monitoring
+Wake On LAN → ESXi Autostart → Port Forwarding → OpenVPN → Container Basics
 ```
 
 ### Cho người có kinh nghiệm:
 ```
-Port Forwarding → CI/CD → Infrastructure as Code → Advanced Monitoring
+Port Forwarding → OpenVPN → Infrastructure as Code → CI/CD → Advanced Monitoring
 ```
 
 ## 🛠️ Công nghệ sử dụng
@@ -111,7 +116,7 @@ Vui lòng tạo issue hoặc gửi merge request nếu có góp ý.
 
 ## 🏷️ Tags
 
-`#DevOps` `#HomeLab` `#ESXi` `#Automation` `#Infrastructure` `#WakeOnLAN` `#Vietnamese` `#SelfHosted` `#Learning`
+`#DevOps` `#HomeLab` `#ESXi` `#Automation` `#Infrastructure` `#WakeOnLAN` `#OpenVPN` `#PortForwarding` `#Vietnamese` `#SelfHosted` `#Learning`
 
 ## 📄 Giấy phép
 
@@ -123,6 +128,8 @@ MIT License - Miễn phí sử dụng cho mục đích giáo dục và cá nhân
 
 **Mới học DevOps?** Bắt đầu tại đây: [Hướng dẫn Wake On LAN](WakeOnLans.md)  
 **Đã có kiến thức cơ bản?** Chuyển sang: [Hướng dẫn ESXi Autostart](ESXi-Autostart.md)  
+**Muốn expose services ra ngoài?** Tiếp tục với: [Hướng dẫn Port Forwarding](ForwardPort.md)  
+**Cần secure remote access?** Tiến lên: [Hướng dẫn OpenVPN Server](OVPM.md)  
 **Muốn tự động hóa toàn diện?** Làm theo toàn bộ lộ trình học!
 
 **Chúc bạn học tập vui vẻ! 🚀**

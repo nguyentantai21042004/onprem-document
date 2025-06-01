@@ -192,4 +192,30 @@ All services ready!
 - [Cài đặt Wake On LAN](WakeOnLans.md) - Tự động hóa tầng phần cứng
 - Container Orchestration - Modern alternative với Docker/K8s
 - Configuration Management - Ansible/Terraform cho enterprise setups
-- Service Mesh - Advanced service networking và management 
+- Service Mesh - Advanced service networking và management
+
+---
+
+## 🚀 Bước Tiếp Theo: Network Service Exposure
+
+Sau khi đã có **complete automation** cho Wake On LAN → VM Autostart → Service Autostart, bước tiếp theo là **expose services ra external network** để có thể truy cập từ bất kỳ đâu.
+
+**📋 Current capability**: 
+```
+WOL → ESXi Boot → Auto VMs → Auto Services (internal only)
+```
+
+**🎯 Next level capability**: 
+```
+WOL → ESXi Boot → Auto VMs → Auto Services → External Access Ready!
+```
+
+### 🌐 Recommended Next Guide: [Port Forwarding & Network Services](ForwardPort.md)
+
+**What you'll learn**:
+- ✅ **Service Exposure**: Router configuration để expose internal services
+- ✅ **Network Security**: Firewall, authentication, SSL best practices  
+- ✅ **Production Deployment**: Reverse proxy, load balancing concepts
+- ✅ **DevOps Networking**: Service discovery, monitoring, automation integration
+
+**Perfect progression**: Infrastructure automation → Application automation → Network automation → Complete DevOps workflow! 🌐 

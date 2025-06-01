@@ -395,22 +395,28 @@ Wake On LAN chỉ là **bước đầu tiên** trong automation journey. Để c
 
 **📋 Current workflow**: 
 ```
-WOL → ESXi Boot → Manual VM start → Manual service start
+WOL → ESXi Boot → Manual VM start → Manual service start → Manual external access
 ```
 
-**🎯 Next level workflow**: 
+**🎯 Complete automation workflow**: 
 ```
-WOL → ESXi Boot → Auto VM start → Auto service start → All services ready!
+WOL → ESXi Boot → Auto VM start → Auto service start → External access ready!
 ```
 
-### 🚀 Recommended Next Guide:
-**[ESXi VM Autostart & Service Automation](ESXi-Autostart.md)**
+### 🚀 Recommended Learning Path:
 
+#### **Step 1: [ESXi VM Autostart & Service Automation](ESXi-Autostart.md)**
 **What you'll learn**:
 - ✅ **ESXi VM Autostart**: Tự động khởi động VMs khi server boot
 - ✅ **Service Automation**: Auto-start services trong VMs 
 - ✅ **Complete Workflow**: Zero manual intervention sau WOL
 - ✅ **Production Best Practices**: systemd, logging, monitoring
-- ✅ **Advanced DevOps Concepts**: Service orchestration, dependency management
 
-**Perfect progression**: Hardware automation → Application automation → Complete infrastructure automation! 🎯
+#### **Step 2: [Port Forwarding & Network Services](ForwardPort.md)**
+**What you'll learn**:
+- ✅ **Service Exposure**: Expose internal services ra external network
+- ✅ **Network Security**: Router configuration, firewall, best practices
+- ✅ **Production Deployment**: SSL, reverse proxy, monitoring
+- ✅ **DevOps Skills**: Service discovery, load balancing concepts
+
+**Perfect progression**: Hardware automation → Application automation → Network automation → Complete infrastructure automation! 🎯
