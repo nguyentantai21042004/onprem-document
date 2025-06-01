@@ -141,3 +141,68 @@ esxcli system settings advanced list -o /Power/UsePStates
 - UsePStates: 0 (disabled)
 
 **Lưu ý:** Cấu hình này sẽ tăng mức tiêu thụ điện nhưng đảm bảo WOL hoạt động ổn định 100%.
+
+## 💡 Shutdown vs Standby - Hiểu đúng khái niệm
+
+### **Shutdown (Tắt nguồn hoàn toàn):**
+- **Power state**: S5 (Soft Off)
+- **Đặc điểm**: Tắt hoàn toàn, chỉ giữ power tối thiểu cho network adapter
+- **WOL**: Có thể wake up nếu network adapter được cấp nguồn
+- **Tiêu thụ điện**: ~5-10W (chỉ PSU standby + network)
+- **Khởi động**: Chậm (full boot process)
+
+### **Standby (Chế độ ngủ):**
+- **Power state**: S3 (Suspend to RAM) 
+- **Đặc điểm**: RAM vẫn được cấp nguồn, CPU và storage ngủ
+- **WOL**: Wake up rất nhanh vì RAM còn data
+- **Tiêu thụ điện**: ~15-30W (RAM + essential components)
+- **Khởi động**: Nhanh (resume từ RAM)
+
+### **Lựa chọn nào cho ESXi?**
+**ESXi không hỗ trợ standby (S3) mode**, chỉ có:
+- **Running**: Hoạt động bình thường
+- **Maintenance Mode**: Chuẩn bị shutdown
+- **Shutdown**: Tắt hoàn toàn (S5)
+
+**→ "Standby" trong ESXi = Shutdown với WOL enabled**
+
+### Bước 4: Tạo script shutdown (standby) tiện lợi
+
+**Mục đích**: Tạo script để gracefully shutdown ESXi và chuẩn bị cho Wake On LAN
+
+#### 4.1 Tạo script shutdown:
+```bash
+vi /root/standby.sh
+```
+
+#### 4.2 Nội dung script:
+```bash
+#!/bin/sh
+echo "Preparing server for Wake on LAN..."
+echo "Entering maintenance mode..."
+esxcli system maintenanceMode set -e true
+
+echo "Waiting 5 seconds for services to stop..."
+sleep 5
+
+echo "Shutting down to standby mode..."
+echo "Server will be ready for Wake on LAN"
+esxcli system shutdown poweroff -d 10 -r "Standby for WoL - $(date)"
+```
+
+#### 4.3 Phân quyền:
+```bash
+chmod +x /root/standby.sh
+```
+
+#### 4.4 Sử dụng script:
+```bash
+# Chạy script để shutdown ESXi một cách an toàn
+/root/standby.sh
+```
+
+**Workflow của script:**
+1. **Maintenance mode**: Đảm bảo VMs được migrate/shutdown properly
+2. **Delay 5s**: Cho các service dừng hoàn toàn
+3. **Graceful shutdown**: Shutdown với message và delay 10s
+4. **WOL ready**: Server sẵn sàng nhận Magic Packet
