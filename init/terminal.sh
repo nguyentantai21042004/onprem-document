@@ -31,6 +31,8 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/the
 # Customize .zshrc
 echo "⚙️  Customizing ~/.zshrc..."
 cat > ~/.zshrc <<'EOF'
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"
 
 plugins=(
   git
@@ -39,6 +41,7 @@ plugins=(
 )
 
 source $ZSH/oh-my-zsh.sh
+EOF
 
 # Customize theme
 CUSTOM_THEME_NAME="robbyrussell"
