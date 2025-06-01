@@ -713,44 +713,42 @@ which ovpm
 Script tự động sử dụng Vietnam timezone (+7). Logs sẽ hiển thị:
 ```
 2024-01-15 14:30:15 ICT+07 [INFO] Health check started
-```
+## ✅ Danh sách kiểm tra sẵn sàng cho Production
 
-## ✅ Production Readiness Checklist
+- [ ] Các gói phụ thuộc Python đã được cài đặt trong môi trường ảo
+- [ ] Các lệnh OVPM có thể truy cập và hoạt động
+- [ ] Webhook Discord đã được cấu hình và kiểm tra
+- [ ] Dịch vụ đã được kích hoạt với tự động khởi động khi boot
+- [ ] Đã thiết lập xoay vòng log cho `/var/log/ovpm_health.log`
+- [ ] Đã xác minh kết nối mạng
+- [ ] Ngưỡng cảnh báo đã được điều chỉnh cho môi trường
+- [ ] Đã sao lưu các file cấu hình
 
-- [ ] Python dependencies installed trong virtual environment
-- [ ] OVPM commands accessible và functional
-- [ ] Discord webhook configured và tested
-- [ ] Service enabled với auto-start on boot
-- [ ] Log rotation setup cho `/var/log/ovpm_health.log`
-- [ ] Network connectivity verified
-- [ ] Alert thresholds tuned cho environment
-- [ ] Backup của configuration files
+## 🔒 Các vấn đề về bảo mật
 
-## 🔒 Security Considerations
+- Script chạy với quyền người dùng phù hợp
+- Không lưu trữ thông tin đăng nhập nhạy cảm trong logs
+- URL webhook Discord được bảo vệ
+- File logs có quyền truy cập phù hợp
+- Cô lập dịch vụ với systemd
 
-- Script chạy với appropriate user permissions
-- No sensitive credentials stored trong logs
-- Discord webhook URL được protect
-- Log files có proper file permissions
-- Service isolation với systemd
+## 🎯 Tích hợp với Hạ tầng OVPM
 
-## 🎯 Integration với OVPM Infrastructure
+Health checker hoàn hảo cho triển khai OVPM production:
+- Giám sát máy chủ VPN trên `192.168.1.210:1197`
+- Theo dõi khả năng truy cập Web UI trên cổng `8080`
+- Xác minh phân giải DNS cho hostname
+- Báo cáo hoạt động người dùng và trạng thái kết nối
+- Cung cấp cảnh báo sớm cho các vấn đề về tài nguyên
 
-Health checker perfect cho production OVPM setup:
-- Monitors VPN server trên `192.168.1.210:1197`
-- Tracks Web UI accessibility trên port `8080`
-- Verifies DNS resolution cho hostname
-- Reports user activity và connection status
-- Provides early warning cho resource issues
+## 📞 Hỗ trợ & Xử lý sự cố
 
-## 📞 Support & Troubleshooting
-
-Nếu gặp issues:
-1. **Check service logs**: `sudo journalctl -u ovpm-health-checker -f`
-2. **Manual test run**: `cd /home/tantai/healthcheck && ./venv/bin/python3 ovpm_health_checker.py`
-3. **Verify OVPM**: `sudo ovpm vpn status`
-4. **Test Discord**: Verify webhook URL và network connectivity
-5. **Check setup guide**: Xem `SETUP-GUIDE.md` trong folder cho detailed instructions
+Nếu gặp vấn đề:
+1. **Kiểm tra logs dịch vụ**: `sudo journalctl -u ovpm-health-checker -f`
+2. **Chạy kiểm tra thủ công**: `cd /home/tantai/healthcheck && ./venv/bin/python3 ovpm_health_checker.py`
+3. **Xác minh OVPM**: `sudo ovpm vpn status`
+4. **Kiểm tra Discord**: Xác minh URL webhook và kết nối mạng
+5. **Xem hướng dẫn cài đặt**: Xem `SETUP-GUIDE.md` trong thư mục để biết hướng dẫn chi tiết
 
 ---
 
@@ -777,37 +775,27 @@ VPN server đã hoạt động hoàn hảo cho Database Infrastructure!
 
 ---
 
-## 🔗 Integration với Complete DevOps Workflow
+## 🔗 Tích hợp vào Quy trình DevOps Hoàn Chỉnh
 
-OpenVPN Server hoàn thiện **secure remote access** cho home lab infrastructure. Đây là evolution từ basic network exposure sang enterprise-grade security.
+OpenVPN Server đã hoàn thiện **truy cập từ xa an toàn** cho hạ tầng home lab. Đây là bước tiến hóa từ việc mở port cơ bản sang bảo mật cấp doanh nghiệp.
 
-### 🚀 Complete Automation Journey:
+### 🚀 Hành Trình Tự Động Hoá Toàn Diện:
 
-**Level 1: Hardware Automation**
-- ✅ [Wake On LAN](Wake-On-LAN.md) - Remote server power management
+**Cấp 1: Tự động hoá phần cứng**
+- ✅ [Wake On LAN](Wake-On-LAN.md) - Quản lý bật/tắt server từ xa
 
-**Level 2: Application Automation**  
-- ✅ [ESXi VM Autostart](ESXi-VM-Autostart.md) - Automatic service startup
+**Cấp 2: Tự động hoá ứng dụng**  
+- ✅ [ESXi VM Autostart](ESXi-VM-Autostart.md) - Khởi động dịch vụ tự động
 
-**Level 3: Network Exposure**
-- ✅ [Port Forwarding](Port-Forwarding.md) - Basic service exposure
+**Cấp 3: Mở dịch vụ ra mạng**
+- ✅ [Port Forwarding](Port-Forwarding.md) - Mở dịch vụ cơ bản ra ngoài
 
-**Level 4: Enterprise Security** (Current)
-- ✅ **OpenVPN Server** - Secure database và LAN access
+**Cấp 4: Bảo mật doanh nghiệp** (Hiện tại)
+- ✅ **OpenVPN Server** - Truy cập an toàn vào database và LAN
 
-**Level 5: Container Orchestration** (Next)
-- 🎯 **Kubernetes/Docker Swarm** - Modern deployment patterns
+**Cấp 5: Điều phối container** (Sắp tới)
+- 🎯 **Kubernetes/Docker Swarm** - Mô hình triển khai hiện đại
 
-### 🔒 Security Evolution:
+### 🔒 Tiến hoá bảo mật:
 
-**📋 Previous approach**: 
-```
-WOL → Auto VMs → Services → Multiple Port Forwarding
-```
-
-**🎯 Current secure approach**: 
-```
-WOL → Auto VMs → Services → Single VPN Tunnel → Complete LAN Access
-```
-
-**Perfect progression**: Hardware automation → Application automation → Network exposure → Secure access → Enterprise infrastructure! 🚀 
+**📋 Cách tiếp cận cũ:** 
