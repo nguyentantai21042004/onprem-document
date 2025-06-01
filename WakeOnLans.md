@@ -23,5 +23,77 @@ Wake On LAN (WOL) là một trong những kỹ thuật cơ bản nhưng quan tr�
 - Network connection (Ethernet)
 - Cấu hình BIOS/UEFI phù hợp
 
-### Các bước thực hiện
-*Nội dung chi tiết sẽ được cập nhật...*
+## PHẦN A: THIẾT LẬP TRÊN ESXi SERVER
+
+### Bước 1: Kiểm tra và kích hoạt WoL trên ESXi
+
+#### 1.1 SSH vào ESXi server:
+```bash
+ssh root@[IP_ESXi_server]
+# Nhập mật khẩu root
+```
+
+#### 1.2 Kiểm tra card mạng và WoL:
+```bash
+# Liệt kê card mạng
+esxcli network nic list
+
+# Kiểm tra chi tiết card mạng chính (thường là vmnic0)
+esxcli network nic get -n vmnic0
+
+# Kiểm tra WoL support và status
+ethtool vmnic0 | grep -i wake
+```
+
+**Kết quả mong đợi:**
+```
+Supports Wake-on: pumbg
+Wake-on: g
+```
+
+#### 1.3 Kích hoạt WoL (nếu chưa có "Wake-on: g"):
+```bash
+ethtool -s vmnic0 wol g
+```
+
+#### 1.4 Ghi nhớ MAC Address:
+```bash
+esxcli network nic list | grep vmnic0
+```
+**Lưu lại MAC Address** (ví dụ: `00:e0:25:30:50:7b`)
+
+### Bước 2: Tạo script tự động kích hoạt WoL
+
+#### 2.1 Tạo script startup:
+```bash
+vi /etc/rc.local.d/local.sh
+```
+
+#### 2.2 Nhập nội dung sau:
+```bash
+#!/bin/sh
+# Auto-enable Wake on LAN for vmnic0
+/usr/lib/vmware/ethtool/bin/ethtool -s vmnic0 wol g
+exit 0
+```
+
+**Mục đích:** 
+- Tạo file script trong thư mục `/etc/rc.local.d/`
+- **Tại sao ở đây?** ESXi tự động chạy tất cả script trong thư mục này khi khởi động
+- **Tương tự:** Như "Startup Programs" trong Windows
+
+Gõ `:wq` và ấn `Enter` để lưu
+
+#### 2.3 Phân quyền cho script:
+```bash
+chmod +x /etc/rc.local.d/local.sh
+```
+
+#### 2.4 Test script:
+```bash
+# Chạy script để test
+/etc/rc.local.d/local.sh
+
+# Kiểm tra kết quả
+ethtool vmnic0 | grep "Wake-on"
+```
