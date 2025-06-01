@@ -722,6 +722,7 @@ Script tự động sử dụng Vietnam timezone (+7). Logs sẽ hiển thị:
 - [ ] Đã xác minh kết nối mạng
 - [ ] Ngưỡng cảnh báo đã được điều chỉnh cho môi trường
 - [ ] Đã sao lưu các file cấu hình
+```
 
 ## 🔒 Các vấn đề về bảo mật
 
