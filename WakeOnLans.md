@@ -208,3 +208,96 @@ chmod +x /root/standby.sh
 2. **Delay 5s**: Cho các service dừng hoàn toàn
 3. **Graceful shutdown**: Shutdown với message và delay 10s
 4. **WOL ready**: Server sẵn sàng nhận Magic Packet
+
+---
+
+## PHẦN B: THIẾT LẬP TRÊN MÁY CLIENT
+
+### 🍎 THIẾT LẬP TRÊN macOS
+
+#### B.1 Cài đặt wakeonlan:
+```bash
+# Sử dụng Homebrew (nếu chưa có Homebrew, cài đặt tại: https://brew.sh)
+brew install wakeonlan
+```
+
+#### B.2 Tạo alias tiện lợi:
+```bash
+# Mở file cấu hình shell
+nano ~/.zshrc
+# Hoặc nano ~/.bash_profile (nếu dùng bash)
+
+# Thêm dòng sau (thay MAC address của bạn):
+alias wakeserver="wakeonlan 00:e0:25:30:50:7b"
+
+# Lưu file và reload
+source ~/.zshrc
+```
+
+#### B.3 Tạo script thông minh wake_and_check_server.sh:
+```bash
+nano ~/wake_and_check_server.sh
+```
+
+**Nội dung:**
+```bash
+#!/bin/bash
+SERVER_IP="192.168.1.50"  # Thay IP ESXi server của bạn
+SERVER_MAC="00:e0:25:30:50:7b"  # Thay MAC address của bạn
+
+echo "🔍 Checking server status..."
+if ping -c 1 -W 5 $SERVER_IP > /dev/null 2>&1; then
+    echo "✅ Server is already UP and running!"
+    echo "🌐 You can access ESXi at: https://$SERVER_IP"
+else
+    echo "❌ Server is DOWN. Sending Wake on LAN packet..."
+    wakeonlan $SERVER_MAC
+    echo "⚡ Magic packet sent!"
+    echo "⏳ Waiting for server to wake up..."
+    
+    # Đợi tối đa 60 giây
+    for i in {1..12}; do
+        sleep 5
+        if ping -c 1 -W 5 $SERVER_IP > /dev/null 2>&1; then
+            echo "✅ Server is now UP! (took $((i*5)) seconds)"
+            echo "🌐 ESXi Web Client: https://$SERVER_IP"
+            exit 0
+        fi
+        echo "⏳ Still waiting... ($((i*5)) seconds elapsed)"
+    done
+    echo "⚠️ Server might need more time. Check manually at: https://$SERVER_IP"
+fi
+```
+
+#### B.4 Phân quyền:
+```bash
+chmod +x ~/wake_and_check_server.sh
+```
+
+#### B.5 Sử dụng script:
+```bash
+# Cách 1: Chạy script đầy đủ
+~/wake_and_check_server.sh
+
+# Cách 2: Chỉ wake (dùng alias)
+wakeserver
+```
+
+**Tính năng của script:**
+- **Smart check**: Kiểm tra server trước khi wake
+- **Auto-wait**: Đợi server boot up và hiển thị thời gian
+- **User-friendly**: Messages rõ ràng với emoji
+- **Timeout handling**: Không đợi vô hạn
+- **Direct access**: Cung cấp link ESXi Web Client
+
+**Output mẫu:**
+```
+🔍 Checking server status...
+❌ Server is DOWN. Sending Wake on LAN packet...
+⚡ Magic packet sent!
+⏳ Waiting for server to wake up...
+⏳ Still waiting... (5 seconds elapsed)
+⏳ Still waiting... (10 seconds elapsed)
+✅ Server is now UP! (took 15 seconds)
+🌐 ESXi Web Client: https://192.168.1.100
+```
