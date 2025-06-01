@@ -7,12 +7,12 @@ Version: 1.0
 """
 
 import subprocess
-import requests
+import requests # type: ignore
 import socket
-import psutil
+import psutil # type: ignore
 import json
 import logging
-import schedule
+import schedule # type: ignore
 import time
 import os
 import sys
