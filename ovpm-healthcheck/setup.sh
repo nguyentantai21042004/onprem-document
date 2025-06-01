@@ -78,20 +78,46 @@ ${SUDO} mkdir -p /var/log
 ${SUDO} touch /var/log/ovpm_health.log
 ${SUDO} chown tantai:tantai /var/log/ovpm_health.log
 
+# Enable and start the service automatically
+echo "🚀 Enabling and starting OVPM Health Checker service..."
+${SUDO} systemctl enable ovpm-health-checker
+${SUDO} systemctl start ovpm-health-checker
+
+# Wait a moment for service to start
+sleep 3
+
+# Check service status
+echo "📊 Checking service status..."
+if ${SUDO} systemctl is-active --quiet ovpm-health-checker; then
+    echo "✅ Service is running successfully!"
+else
+    echo "⚠️ Service may not be running properly. Check status manually."
+fi
+
+if ${SUDO} systemctl is-enabled --quiet ovpm-health-checker; then
+    echo "✅ Service will start automatically on boot!"
+else
+    echo "⚠️ Service auto-start may not be enabled properly."
+fi
+
 echo ""
-echo "✅ OVPM Health Checker installed successfully!"
+echo "✅ OVPM Health Checker installed and started successfully!"
 echo ""
-echo "📋 Next steps:"
-echo "1. Edit configuration file: nano $INSTALL_DIR/ovpm_config.json"
-echo "2. Verify Discord webhook URL is correct"
-echo "3. Adjust settings as needed"
-echo "4. Enable the service: sudo systemctl enable ovpm-health-checker"
-echo "5. Start the service: sudo systemctl start ovpm-health-checker"
+echo "📋 Service Status:"
+echo "- ✅ Auto-start on boot: ENABLED"
+echo "- ✅ Currently running: $(${SUDO} systemctl is-active ovpm-health-checker)"
+echo "- 📁 Working directory: $INSTALL_DIR"
+echo "- 📝 Log file: /var/log/ovpm_health.log"
+echo "- ⚙️ Config file: $INSTALL_DIR/ovpm_config.json"
 echo ""
 echo "🔍 Useful commands:"
 echo "- Check status: sudo systemctl status ovpm-health-checker"
 echo "- View logs: sudo journalctl -u ovpm-health-checker -f"
 echo "- View health logs: tail -f /var/log/ovpm_health.log"
-echo "- Test run: cd $INSTALL_DIR && ./venv/bin/python3 ovpm_health_checker.py"
+echo "- Restart service: sudo systemctl restart ovpm-health-checker"
+echo "- Stop service: sudo systemctl stop ovpm-health-checker"
+echo "- Disable auto-start: sudo systemctl disable ovpm-health-checker"
 echo ""
-echo "🎯 Configuration file location: $INSTALL_DIR/ovpm_config.json" 
+echo "🎯 Manual test run: cd $INSTALL_DIR && ./venv/bin/python3 ovpm_health_checker.py"
+echo ""
+echo "💬 Discord notifications should start appearing in your channel!" 

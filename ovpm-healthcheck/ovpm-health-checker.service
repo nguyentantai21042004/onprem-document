@@ -2,6 +2,8 @@
 Description=OVPM Health Checker Service
 After=network.target ovpmd.service
 Wants=ovpmd.service
+# Restart if ovpmd restarts
+BindsTo=ovpmd.service
 
 [Service]
 Type=simple
@@ -9,13 +11,35 @@ User=tantai
 Group=tantai
 WorkingDirectory=/home/tantai/healthcheck
 ExecStart=/home/tantai/healthcheck/venv/bin/python3 /home/tantai/healthcheck/ovpm_health_checker.py
+
+# Advanced restart mechanisms
 Restart=always
 RestartSec=30
-StandardOutput=journal
-StandardError=journal
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Watchdog settings
+WatchdogSec=300
+NotifyAccess=none
+
+# Resource limits and monitoring
+MemoryMax=512M
+CPUQuota=50%
+
+# Health check commands
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+TimeoutStopSec=60
+KillMode=mixed
 
 # Environment
 Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/tantai/healthcheck
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ovpm-health-checker
 
 # Security settings
 NoNewPrivileges=yes
