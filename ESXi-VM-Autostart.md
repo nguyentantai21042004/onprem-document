@@ -189,7 +189,7 @@ All services ready!
 
 ## 🔗 Chủ Đề Liên Quan
 
-- [Cài đặt Wake On LAN](WakeOnLans.md) - Tự động hóa tầng phần cứng
+- [Cài đặt Wake On LAN](Wake-On-LAN.md) - Tự động hóa tầng phần cứng
 - Container Orchestration - Modern alternative với Docker/K8s
 - Configuration Management - Ansible/Terraform cho enterprise setups
 - Service Mesh - Advanced service networking và management
