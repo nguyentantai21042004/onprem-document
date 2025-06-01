@@ -301,3 +301,129 @@ wakeserver
 ✅ Server is now UP! (took 15 seconds)
 🌐 ESXi Web Client: https://192.168.1.100
 ```
+
+### 💻 THIẾT LẬP TRÊN WINDOWS
+
+#### B.1 Tạo PowerShell script:
+
+**Tạo file `WakeServer.ps1`:**
+```powershell
+# Wake on LAN Script for ESXi Server
+param(
+    [string]$MacAddress = "00:e0:25:30:50:7b",  # Thay MAC của bạn
+    [string]$ServerIP = "192.168.1.100"         # Thay IP của bạn
+)
+
+function Send-WakeOnLan {
+    param([string]$MacAddress)
+    
+    Write-Host "📡 Sending Wake on LAN packet to $MacAddress..." -ForegroundColor Yellow
+    
+    try {
+        $mac = $MacAddress -replace '[:-]'
+        $target = 0,2,4,6,8,10 | ForEach-Object {[convert]::ToByte($mac.substring($_,2),16)}
+        $packet = (,[byte]255 * 6) + ($target * 16)
+        
+        $UDPclient = New-Object System.Net.Sockets.UdpClient
+        $UDPclient.Connect(([System.Net.IPAddress]::Broadcast),9)
+        [void]$UDPclient.Send($packet, $packet.Length)
+        $UDPclient.Close()
+        
+        Write-Host "✅ Magic packet sent successfully!" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "❌ Error sending magic packet: $($_.Exception.Message)" -ForegroundColor Red
+        return $false
+    }
+}
+
+function Test-ServerStatus {
+    param([string]$ServerIP)
+    
+    Write-Host "🔍 Checking server status at $ServerIP..." -ForegroundColor Cyan
+    
+    $ping = Test-Connection -ComputerName $ServerIP -Count 1 -Quiet -ErrorAction SilentlyContinue
+    return $ping
+}
+
+# Main execution
+Write-Host "=== ESXi Server Wake on LAN Tool ===" -ForegroundColor Magenta
+Write-Host ""
+
+if (Test-ServerStatus -ServerIP $ServerIP) {
+    Write-Host "✅ Server is already UP and running!" -ForegroundColor Green
+    Write-Host "🌐 ESXi Web Client: https://$ServerIP" -ForegroundColor Cyan
+} else {
+    Write-Host "❌ Server appears to be DOWN" -ForegroundColor Red
+    
+    if (Send-WakeOnLan -MacAddress $MacAddress) {
+        Write-Host "⏳ Waiting for server to wake up..." -ForegroundColor Yellow
+        
+        # Đợi tối đa 60 giây
+        for ($i = 1; $i -le 12; $i++) {
+            Start-Sleep -Seconds 5
+            if (Test-ServerStatus -ServerIP $ServerIP) {
+                Write-Host "✅ Server is now UP! (took $($i*5) seconds)" -ForegroundColor Green
+                Write-Host "🌐 ESXi Web Client: https://$ServerIP" -ForegroundColor Cyan
+                break
+            }
+            Write-Host "   ⏳ Still waiting... ($($i*5) seconds elapsed)" -ForegroundColor Gray
+        }
+        
+        if (-not (Test-ServerStatus -ServerIP $ServerIP)) {
+            Write-Host "⚠️  Server might need more time. Check manually at: https://$ServerIP" -ForegroundColor Yellow
+        }
+    }
+}
+
+Write-Host ""
+Write-Host "Press any key to exit..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+```
+
+#### B.2 Tạo Batch file wrapper:
+
+**Tạo file `WakeServer.bat`:**
+```batch
+@echo off
+title ESXi Server Wake on LAN
+echo Starting Wake on LAN tool...
+powershell -ExecutionPolicy Bypass -File "%~dp0WakeServer.ps1"
+```
+
+#### B.3 Tạo shortcut đơn giản:
+
+**Tạo file `QuickWake.bat`:**
+```batch
+@echo off
+title Quick Wake ESXi Server
+echo Sending Wake on LAN packet...
+powershell -Command "& {
+    $mac = '00:e0:25:30:50:7b'
+    $target = 0,2,4,6,8,10 | ForEach-Object {[convert]::ToByte($mac.substring($_,2),16)}
+    $packet = (,[byte]255 * 6) + ($target * 16)
+    $UDPclient = New-Object System.Net.Sockets.UdpClient
+    $UDPclient.Connect(([System.Net.IPAddress]::Broadcast),9)
+    [void]$UDPclient.Send($packet, $packet.Length)
+    $UDPclient.Close()
+    Write-Host 'Magic packet sent to ESXi server!'
+}"
+echo.
+echo Magic packet sent! Server should wake up in 30-60 seconds.
+echo You can access ESXi at: https://192.168.1.100
+echo.
+pause
+```
+
+**Cách sử dụng:**
+- **`WakeServer.ps1`**: Script đầy đủ với kiểm tra và feedback
+- **`WakeServer.bat`**: Wrapper để chạy PowerShell dễ dàng
+- **`QuickWake.bat`**: Quick wake không kiểm tra, chạy nhanh
+
+**Đặc điểm Windows scripts:**
+- **Full-featured**: Giống macOS script với đầy đủ tính năng
+- **Error handling**: Xử lý lỗi PowerShell execution policy
+- **Visual feedback**: Colored output và progress indication
+- **User-friendly**: Press any key to exit
+- **No dependencies**: Sử dụng built-in Windows PowerShell
