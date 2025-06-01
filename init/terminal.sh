@@ -7,8 +7,10 @@ sudo apt install zsh git curl wget -y
 echo "✅ Setting Zsh as default shell..."
 chsh -s $(which zsh)
 
-# Install Oh My Zsh
+# Install Oh My Zsh (non-interactive, prevent auto-zsh switch)
 echo "💡 Installing Oh My Zsh..."
+export RUNZSH=no
+export CHSH=no
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
 # Custom plugin directory
