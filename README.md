@@ -25,24 +25,29 @@ Repository này chứa **documentation chi tiết** cho việc **tự build và 
    - Service automation trong Linux VMs
    - Complete automation workflow
 
+3. **[Port Forwarding & Network Services](ForwardPort.md)** - *Intermediate Level*
+   - Expose internal services ra external network
+   - Router configuration và security best practices
+   - Production-ready service deployment
+
 ### 🚀 Sắp tới (Roadmap)
 
-3. **Container Orchestration** - Docker & Kubernetes setup
-4. **Monitoring & Logging** - Prometheus, Grafana, ELK stack
-5. **CI/CD Pipeline** - GitLab/Jenkins automation
-6. **Network Services** - VPN, DNS, reverse proxy
-7. **Backup & Recovery** - Automated backup strategies
+4. **Container Orchestration** - Docker & Kubernetes setup
+5. **Monitoring & Logging** - Prometheus, Grafana, ELK stack
+6. **CI/CD Pipeline** - GitLab/Jenkins automation
+7. **Network Services** - VPN, DNS, reverse proxy
+8. **Backup & Recovery** - Automated backup strategies
 
 ## 🎓 Learning Path
 
 ### Cho người mới bắt đầu:
 ```
-Wake On LAN → ESXi Autostart → Container Basics → Monitoring
+Wake On LAN → ESXi Autostart → Port Forwarding → Container Basics → Monitoring
 ```
 
 ### Cho người có kinh nghiệm:
 ```
-ESXi Autostart → CI/CD → Infrastructure as Code → Advanced Monitoring
+Port Forwarding → CI/CD → Infrastructure as Code → Advanced Monitoring
 ```
 
 ## 🛠️ Công nghệ sử dụng
