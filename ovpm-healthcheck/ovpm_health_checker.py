@@ -16,8 +16,18 @@ import schedule
 import time
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+class VietnamFormatter(logging.Formatter):
+    """Custom formatter to show Vietnam timezone (+7)"""
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, tz=timezone(timedelta(hours=7)))
+        if datefmt:
+            s = dt.strftime(datefmt)
+        else:
+            s = dt.strftime('%Y-%m-%d %H:%M:%S %Z+07')
+        return s
 
 class OVPMHealthChecker:
     def __init__(self, config_file='ovpm_config.json'):
@@ -62,20 +72,31 @@ class OVPMHealthChecker:
         print("Please edit the config file and add your Discord webhook URL!")
         
     def setup_logging(self):
-        """Setup logging configuration"""
+        """Setup logging configuration with Vietnam timezone"""
         log_file = self.config.get('log_file', '/var/log/ovpm_health.log')
         
         # Create log directory if not exists
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
         
+        # Create custom formatter with Vietnam timezone
+        vietnam_formatter = VietnamFormatter('[%(levelname)s] %(message)s')
+        
+        # Create handlers
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(vietnam_formatter)
+        
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(vietnam_formatter)
+        
+        # Setup root logger
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s [%(levelname)s] %(message)s',
-            handlers=[
-                logging.FileHandler(log_file),
-                logging.StreamHandler(sys.stdout)
-            ]
+            handlers=[file_handler, console_handler]
         )
+        
+    def get_vietnam_time(self):
+        """Get current time in Vietnam timezone"""
+        return datetime.now(tz=timezone(timedelta(hours=7)))
         
     def run_command(self, command, shell=False):
         """Run system command and return result"""
@@ -322,13 +343,15 @@ class OVPMHealthChecker:
         
     def perform_health_check(self):
         """Perform complete health check"""
+        vietnam_time = self.get_vietnam_time()
         self.logger.info("=" * 60)
-        self.logger.info(f"Starting OVPM Health Check - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        self.logger.info(f"Starting OVPM Health Check - {vietnam_time.strftime('%Y-%m-%d %H:%M:%S +07')}")
         self.logger.info("=" * 60)
         
         # Collect all health data
         health_data = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': vietnam_time.isoformat(),
+            'vietnam_time': vietnam_time.strftime('%Y-%m-%d %H:%M:%S +07'),
             'ovpmd_service': self.check_ovpmd_service(),
             'ovpm_status': self.check_ovpm_status(),
             'network': self.check_network_connectivity(),
@@ -451,6 +474,7 @@ class OVPMHealthChecker:
         
         embed = {
             "title": f"{emojis[status]} OVPM Health Check - {status}",
+            "description": f"🕐 Vietnam Time: {health_data['vietnam_time']}",
             "color": colors[status],
             "timestamp": health_data['timestamp'],
             "fields": [
