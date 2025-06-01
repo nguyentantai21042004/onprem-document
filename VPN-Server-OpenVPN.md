@@ -424,87 +424,101 @@ route 192.168.1.0 255.255.255.0
 
 # 🏥 OVPM Health Checker
 
-Comprehensive health monitoring system for OpenVPN server với OVPM, với Discord webhook integration và detailed logging.
+Comprehensive health monitoring system cho OpenVPN server với OVPM, kèm Discord webhook integration và detailed logging.
 
 ## 🎯 Features
 
 - **Comprehensive Health Checks**: OVPM service, network connectivity, system resources
 - **Discord Notifications**: Real-time alerts và hourly status reports
-- **Detailed Logging**: Chi tiết logs cho troubleshooting
-- **Automatic Scheduling**: Chạy mỗi tiếng tự động
-- **Systemd Integration**: Chạy như system service
-- **Configurable Thresholds**: Custom warning levels
+- **Vietnam Timezone Logging**: Logs với múi giờ Việt Nam (+7)
+- **Automatic Scheduling**: Health checks mỗi tiếng tự động
+- **Systemd Integration**: Chạy như system service với auto-start
+- **Configurable Thresholds**: Custom warning levels cho các resources
 
 ## 📋 Health Check Items
 
 ### 🔧 Service Monitoring
-- `ovpmd` service status
-- OpenVPN process monitoring
-- Process CPU & memory usage
+- `ovpmd` service status với systemctl
+- OpenVPN process monitoring với psutil
+- Process CPU & memory usage chi tiết
 
 ### 🌐 Network Connectivity
 - OpenVPN port (1197/UDP) listening check
-- Web UI port (8080/TCP) response check
+- Web UI port (8080/TCP) response time monitoring
 - DNS resolution cho VPN hostname
 
 ### 👥 VPN Status
-- Total users configured
-- Active VPN connections
-- User connection details
+- Total users configured trong OVPM
+- Active VPN connections tracking
+- User connection details và activity
 
 ### 💻 System Resources
 - CPU usage với configurable thresholds
 - Memory usage với warnings
-- Disk usage cho OVPM directory
-- System uptime
+- Disk usage cho system directories
+- System uptime tracking
 
 ### 📊 Discord Notifications
-- Real-time critical alerts
-- Hourly status summaries
-- Color-coded status (Green/Yellow/Red)
-- Detailed embed messages
+- Real-time critical alerts với color coding
+- Hourly status summaries với detailed embeds
+- Color-coded status (🟢 Green/🟡 Yellow/🔴 Red)
+- Rich embed messages với icons và metrics
 
 ## 🚀 Quick Start
 
-### 1. Download Files
+### 1. Chuẩn bị Files
+
+Từ thư mục project chứa folder `ovpm-healthcheck`:
 
 ```bash
-# Trên OVPM server
-wget https://raw.githubusercontent.com/your-repo/ovpm-health-checker/main/ovpm_health_checker.py
-wget https://raw.githubusercontent.com/your-repo/ovpm-health-checker/main/requirements.txt
-wget https://raw.githubusercontent.com/your-repo/ovpm-health-checker/main/ovpm-health-checker.service
-wget https://raw.githubusercontent.com/your-repo/ovpm-health-checker/main/setup.sh
+# Copy files lên OVPM server
+scp -r ovpm-healthcheck/ root@192.168.1.210:/home/tantai/healthcheck/
+
+# Hoặc copy từng file
+scp ovpm-healthcheck/* root@192.168.1.210:/home/tantai/healthcheck/
 ```
 
-### 2. Run Setup Script
+### 2. SSH vào Server và Setup
 
 ```bash
+# SSH vào OVPM server
+ssh root@192.168.1.210
+
+# Di chuyển đến thư mục
+cd /home/tantai/healthcheck
+
+# Chạy automated setup script
 chmod +x setup.sh
-sudo ./setup.sh
+./setup.sh
 ```
 
 ### 3. Configure Discord Webhook
 
 ```bash
 # Edit config file
-sudo nano /opt/ovpm-health-checker/ovpm_config.json
+nano ovpm_config.json
 
-# Add Discord webhook URL:
+# Cập nhật Discord webhook URL:
 {
     "discord_webhook": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL",
-    ...
+    "ovpm_hostname": "vpn.yourdomain.com"
 }
 ```
 
-### 4. Start Service
+### 4. Service đã tự động được start
+
+Setup script sẽ tự động:
+- Cài đặt Python dependencies
+- Tạo virtual environment
+- Install systemd service
+- Enable và start service
 
 ```bash
-# Enable và start service
-sudo systemctl enable ovpm-health-checker
-sudo systemctl start ovpm-health-checker
-
-# Check status
+# Check service status
 sudo systemctl status ovpm-health-checker
+
+# View logs
+sudo journalctl -u ovpm-health-checker -f
 ```
 
 ## ⚙️ Configuration
@@ -543,7 +557,7 @@ sudo systemctl status ovpm-health-checker
 | `web_ui_port` | OVPM Web UI port | 8080 |
 | `log_file` | Path to health check log file | /var/log/ovpm_health.log |
 | `alert_thresholds` | Warning thresholds cho resources | See above |
-| `send_hourly_status` | Send status mỗi tiếng | true |
+| `send_hourly_status` | Send status reports mỗi tiếng | true |
 | `send_only_errors` | Chỉ send khi có errors | false |
 
 ## 📊 Discord Notifications
@@ -551,77 +565,88 @@ sudo systemctl status ovpm-health-checker
 ### Healthy Status Message:
 ```
 🟢 OVPM Health Check - HEALTHY
-🔧 Service Status: ✅ Running
-👥 VPN Users: Active: 2/3
+🔧 Service Status: ✅ Running (2 OpenVPN processes)
+👥 VPN Users: Total: 3, Active: 1
 💻 CPU Usage: 15.3%
 🌐 Network: OpenVPN: ✅ Listening, Web UI: ✅ Responding (120ms)
-💾 Memory: 2.1GB/4GB (52%)
+💾 Memory: 2.1GB/4GB (52.5%)
+💽 Disk: 0.45GB/20GB (2.3%)
 ⏰ Uptime: 7d 14h 23m
+🕐 Check Time: 2024-01-15 14:30:15 ICT+07
 ```
 
 ### Critical Alert:
 ```
 🔴 OVPM Health Check - CRITICAL
-🚨 Critical Issues:
-- OVPMD service not running
-- OpenVPN port not listening
+🚨 Critical Issues Found:
+- ❌ OVPMD service not running
+- ❌ OpenVPN port not listening
+- ⚠️ High CPU usage: 85.2%
+
+💻 System Status:
+- Memory: 3.4GB/4GB (85%)
+- Web UI: ❌ Not responding
 ```
 
 ## 🔍 Monitoring & Troubleshooting
 
-### Check Service Status:
+### Service Management:
 ```bash
+# Check service status
 sudo systemctl status ovpm-health-checker
-```
 
-### View Real-time Logs:
-```bash
-# Service logs
+# View real-time service logs
 sudo journalctl -u ovpm-health-checker -f
 
-# Health check logs
-sudo tail -f /var/log/ovpm_health.log
+# View health check logs với Vietnam timezone
+tail -f /var/log/ovpm_health.log
 ```
 
-### Manual Test Run:
+### Manual Testing:
 ```bash
-cd /opt/ovpm-health-checker
-sudo ./venv/bin/python3 ovpm_health_checker.py
+# Manual test run
+cd /home/tantai/healthcheck
+./venv/bin/python3 ovpm_health_checker.py
+
+# One-time check without scheduling
+python3 ovpm_health_checker.py --single-run
 ```
 
-### Common Issues:
+### Service Controls:
+```bash
+# Stop service
+sudo systemctl stop ovpm-health-checker
 
-1. **Service won't start**: Check permissions và config file
-2. **Discord notifications not working**: Verify webhook URL
-3. **Permission errors**: Ensure script runs as root
-4. **OVPM commands fail**: Check if OVPM is properly installed
+# Restart service
+sudo systemctl restart ovpm-health-checker
+
+# Disable auto-start
+sudo systemctl disable ovpm-health-checker
+
+# Re-enable auto-start
+sudo systemctl enable ovpm-health-checker
+```
 
 ## 📁 File Structure
 
 ```
-/opt/ovpm-health-checker/
-├── ovpm_health_checker.py    # Main script
-├── ovpm_config.json          # Configuration file
-├── requirements.txt          # Python dependencies
-├── venv/                     # Virtual environment
-└── logs/                     # Log files
+/home/tantai/healthcheck/
+├── ovpm_health_checker.py     # Main health check script
+├── ovpm_config.json           # Configuration file
+├── requirements.txt           # Python dependencies
+├── setup.sh                   # Automated setup script
+├── ovpm-health-checker.service # Systemd service file
+├── venv/                      # Python virtual environment
+└── SETUP-GUIDE.md             # Detailed setup guide
 
 /etc/systemd/system/
-└── ovpm-health-checker.service  # Systemd service file
+└── ovpm-health-checker.service   # Installed service file
 
 /var/log/
-└── ovpm_health.log           # Health check logs
+└── ovpm_health.log            # Health check logs với Vietnam timezone
 ```
 
-## 🛠️ Development & Customization
-
-### Add Custom Checks:
-```python
-def check_custom_metric(self):
-    """Add your custom health check here"""
-    # Implementation
-    return {'status': '✅ OK', 'details': 'Custom check passed'}
-```
+## 🛠️ Advanced Configuration
 
 ### Modify Alert Thresholds:
 ```json
@@ -636,67 +661,96 @@ def check_custom_metric(self):
 ```
 
 ### Change Check Frequency:
-Edit line trong `ovpm_health_checker.py`:
+Edit trong `ovpm_health_checker.py`:
 ```python
 # Change from hourly to every 30 minutes
 schedule.every(30).minutes.do(run_health_check)
 ```
 
+### Custom Discord Formatting:
+Script sử dụng rich embeds với:
+- Color coding based on health status
+- Vietnam timezone display
+- Detailed metrics với icons
+- Process monitoring information
+
+## 🚨 Common Issues & Solutions
+
+### 1. Service won't start:
+```bash
+# Check Python environment
+cd /home/tantai/healthcheck
+./venv/bin/python3 -c "import requests, psutil, schedule; print('All modules OK')"
+
+# Check permissions
+ls -la ovpm_health_checker.py
+chmod +x ovpm_health_checker.py
+```
+
+### 2. Discord notifications not working:
+```bash
+# Test webhook manually
+curl -X POST "YOUR_WEBHOOK_URL" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Test message from OVPM server"}'
+
+# Verify webhook URL trong config
+grep discord_webhook ovpm_config.json
+```
+
+### 3. OVPM commands fail:
+```bash
+# Test OVPM access
+ovpm --version
+ovpm vpn status
+sudo systemctl status ovpmd
+
+# Check if user has proper permissions
+which ovpm
+```
+
+### 4. Timezone issues:
+Script tự động sử dụng Vietnam timezone (+7). Logs sẽ hiển thị:
+```
+2024-01-15 14:30:15 ICT+07 [INFO] Health check started
+```
+
+## ✅ Production Readiness Checklist
+
+- [ ] Python dependencies installed trong virtual environment
+- [ ] OVPM commands accessible và functional
+- [ ] Discord webhook configured và tested
+- [ ] Service enabled với auto-start on boot
+- [ ] Log rotation setup cho `/var/log/ovpm_health.log`
+- [ ] Network connectivity verified
+- [ ] Alert thresholds tuned cho environment
+- [ ] Backup của configuration files
+
 ## 🔒 Security Considerations
 
-- Script chạy với root permissions để access system commands
-- Log files có appropriate permissions
-- No sensitive data logged
-- Discord webhook URL should be kept secure
+- Script chạy với appropriate user permissions
+- No sensitive credentials stored trong logs
+- Discord webhook URL được protect
+- Log files có proper file permissions
+- Service isolation với systemd
 
 ## 🎯 Integration với OVPM Infrastructure
 
-Script này perfect cho monitoring OVPM setup như trong documentation:
+Health checker perfect cho production OVPM setup:
 - Monitors VPN server trên `192.168.1.210:1197`
-- Checks Web UI accessibility trên `8080`
-- Verifies DNS resolution cho `vpn.yourdomain.com`
-- Tracks VPN user connections và activity
+- Tracks Web UI accessibility trên port `8080`
+- Verifies DNS resolution cho hostname
+- Reports user activity và connection status
+- Provides early warning cho resource issues
 
-## 📞 Support
+## 📞 Support & Troubleshooting
 
 Nếu gặp issues:
-1. Check logs: `sudo journalctl -u ovpm-health-checker -f`
-2. Test manual run: `sudo /opt/ovpm-health-checker/venv/bin/python3 /opt/ovpm-health-checker/ovpm_health_checker.py`
-3. Verify OVPM is working: `sudo ovpm vpn status`
-4. Check Discord webhook URL
-
-## 🎯 TÓM TẮT & BEST PRACTICES
-
-### ✅ DevOps Learning Outcomes:
-
-**Enterprise Security**: PKI infrastructure, certificate management, authentication  
-**Database Access**: Secure remote database connectivity  
-**Network Architecture**: VPN tunneling, routing, LAN access  
-**User Management**: RBAC, access control, audit trails  
-**Infrastructure Management**: OVPM administration, monitoring  
-
-### 📋 Production-Ready Checklist:
-
-- [ ] **DNS Setup**: Subdomain `vpn.yourdomain.com` configured
-- [ ] **Firewall**: UFW rules for ports 1197/UDP and 8080/TCP
-- [ ] **IP Forwarding**: Enabled for LAN routing
-- [ ] **Database Access**: Tested connectivity to all database VMs
-- [ ] **User Management**: Admin and database users created
-- [ ] **Monitoring**: Logs và connection monitoring setup
-- [ ] **Backup**: Database và config files backed up
-
-### 🔒 Security Best Practices:
-
-```bash
-# Recommended network architecture:
-# Public Internet
-#     ↓ (Port 1197/UDP only)
-# Router with VPN port forwarding
-#     ↓
-# VPN Server (192.168.1.210)
-#     ↓ (Encrypted tunnel)
-# Database VMs (192.168.1.x)
-```
+1. **Check service logs**: `sudo journalctl -u ovpm-health-checker -f`
+2. **Manual test run**: `cd /home/tantai/healthcheck && ./venv/bin/python3 ovpm_health_checker.py`
+3. **Verify OVPM**: `sudo ovpm vpn status`
+4. **Test Discord**: Verify webhook URL và network connectivity
+5. **Check setup guide**: Xem `SETUP-GUIDE.md` trong folder cho detailed instructions
 
 ---
 
