@@ -1,4 +1,4 @@
-# Wake On LAN - Bước đầu tiên trong hành trình DevOps
+# Wake On LAN
 
 ## Giới thiệu
 
