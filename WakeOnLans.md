@@ -97,3 +97,47 @@ chmod +x /etc/rc.local.d/local.sh
 # Kiểm tra kết quả
 ethtool vmnic0 | grep "Wake-on"
 ```
+
+#### 2.5 Luồng hoạt động:
+```
+ESXi khởi động
+    ↓
+Chạy tất cả script trong /etc/rc.local.d/
+    ↓
+Chạy local.sh
+    ↓
+Thực thi: ethtool -s vmnic0 wol g
+    ↓
+Wake on LAN được bật tự động
+    ↓
+ESXi sẵn sàng nhận Magic Packet
+```
+
+### Bước 3: Cấu hình Power Management
+
+**Tại sao cần bước này?**
+- ESXi mặc định có thể sử dụng các chế độ tiết kiệm điện (P-States, C-States)
+- Các chế độ này có thể làm network adapter "ngủ sâu" và không phản hồi Magic Packet
+- Cấu hình High Performance đảm bảo network luôn sẵn sàng nhận WOL
+
+#### 3.1 Cấu hình Power Policy:
+```bash
+# Set High Performance mode
+esxcli system settings advanced set -o /Power/CpuPolicy -s "High Performance"
+
+# Disable P-States (optional)
+esxcli system settings advanced set -o /Power/UsePStates -i 0
+```
+
+#### 3.2 Kiểm tra cấu hình:
+```bash
+# Kiểm tra cấu hình
+esxcli system settings advanced list -o /Power/CpuPolicy
+esxcli system settings advanced list -o /Power/UsePStates
+```
+
+**Kết quả mong đợi:**
+- CpuPolicy: "High Performance" 
+- UsePStates: 0 (disabled)
+
+**Lưu ý:** Cấu hình này sẽ tăng mức tiêu thụ điện nhưng đảm bảo WOL hoạt động ổn định 100%.
