@@ -1,0 +1,13 @@
+[Unit]
+Description=Tanca Employee Shift Bot
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=tanca-test
+ExecStart=/home/tanca-test/start_up_vm.sh
+ExecStop=/bin/bash -c 'pkill -f "python3 bot.py"'
+
+[Install]
+WantedBy=multi-user.target
