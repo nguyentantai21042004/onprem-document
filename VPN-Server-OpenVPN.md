@@ -76,16 +76,16 @@ ping vpn.yourdomain.com
 ### Thêm repository APT
 
 ```bash
-# Tải và cài đặt OVPM
-curl -s https://raw.githubusercontent.com/cad/ovpm/master/scripts/install.sh | sudo bash
+# Add APT Repo
+sudo sh -c 'echo "deb [trusted=yes] https://cad.github.io/ovpm/deb/ ovpm main" >> /etc/apt/sources.list'
+sudo apt update
 
-# Hoặc cài đặt manual:
-wget -O ovpm.deb https://github.com/cad/ovpm/releases/latest/download/ovpm_linux_amd64.deb
-sudo dpkg -i ovpm.deb
+# Install OVPM
+sudo apt install ovpm
 
-# Start service
-sudo systemctl start ovpmd
-sudo systemctl enable ovpmd
+# Enable and start ovpmd service
+systemctl start ovpmd
+systemctl enable ovpmd
 ```
 
 ### Kiểm tra service đã chạy
