@@ -1,93 +1,123 @@
-# server build docs
+# Server Build Documentation 🏠🖥️
 
+## Giới thiệu
 
+Repository này chứa **documentation chi tiết** cho việc **tự build và quản lý server tại nhà**, đặc biệt hướng đến **học DevOps** và **home lab setup**. Mỗi file Markdown là một hướng dẫn từng bước cụ thể, dễ theo dõi và thực hành.
 
-## Getting started
+## 🎯 Mục tiêu
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- **Học DevOps thực tế**: Từ cơ bản đến nâng cao
+- **Home Lab Setup**: Xây dựng environment học tập tại nhà
+- **Infrastructure Automation**: Tự động hóa từ hardware đến application
+- **Best Practices**: Áp dụng các phương pháp hay nhất trong thực tế
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 📚 Danh sách hướng dẫn
 
-## Add your files
+### 🔌 Infrastructure & Automation
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+1. **[Wake On LAN](WakeOnLans.md)** - *Foundation Level*
+   - Remote power management cho ESXi server
+   - Client-side automation scripts (macOS/Windows)
+   - Network protocols và troubleshooting
 
+2. **[ESXi VM Autostart](ESXi-Autostart.md)** - *Intermediate Level*
+   - Tự động khởi động VMs sau khi server boot
+   - Service automation trong Linux VMs
+   - Complete automation workflow
+
+### 🚀 Sắp tới (Roadmap)
+
+3. **Container Orchestration** - Docker & Kubernetes setup
+4. **Monitoring & Logging** - Prometheus, Grafana, ELK stack
+5. **CI/CD Pipeline** - GitLab/Jenkins automation
+6. **Network Services** - VPN, DNS, reverse proxy
+7. **Backup & Recovery** - Automated backup strategies
+
+## 🎓 Learning Path
+
+### Cho người mới bắt đầu:
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/tantai-server/server-build-docs.git
-git branch -M main
-git push -uf origin main
+Wake On LAN → ESXi Autostart → Container Basics → Monitoring
 ```
 
-## Integrate with your tools
+### Cho người có kinh nghiệm:
+```
+ESXi Autostart → CI/CD → Infrastructure as Code → Advanced Monitoring
+```
 
-- [ ] [Set up project integrations](https://gitlab.com/tantai-server/server-build-docs/-/settings/integrations)
+## 🛠️ Công nghệ sử dụng
 
-## Collaborate with your team
+**Ảo hóa**: VMware ESXi  
+**Hệ điều hành**: Linux (Ubuntu/CentOS), macOS, Windows  
+**Tự động hóa**: Bash scripts, PowerShell, Python  
+**Mạng**: Wake On LAN, SSH, TCP/IP  
+**Công cụ DevOps**: Git, Docker, systemd  
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## 💡 Đặc điểm nổi bật
 
-## Test and Deploy
+### ✅ **Thực tiễn & Thực hành**
+- Mỗi hướng dẫn đều có ví dụ thực tế
+- Có quy trình kiểm thử và xử lý sự cố
+- Script sẵn sàng cho môi trường production
 
-Use the built-in continuous integration in GitLab.
+### ✅ **Định hướng DevOps**
+- Tập trung vào tự động hóa và best practices
+- Tiếp cận Infrastructure as Code
+- Tương thích đa nền tảng
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### ✅ **Thân thiện cho người mới**
+- Giải thích từ cơ bản đến nâng cao
+- Hướng dẫn từng bước
+- Có phần xử lý sự cố
 
-***
+## 🔧 Yêu cầu
 
-# Editing this README
+**Phần cứng**:
+- Server/Workstation hỗ trợ ảo hóa
+- Hạ tầng mạng (router, switch)
+- Tối thiểu 16GB RAM, 100GB lưu trữ
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+**Phần mềm**:
+- VMware ESXi (có bản miễn phí)
+- Máy client chạy macOS/Windows
+- Kiến thức cơ bản về dòng lệnh
 
-## Suggestions for a good README
+## 📖 Cách sử dụng
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+1. **Clone repository**:
+   ```bash
+   git clone https://gitlab.com/tantai-server/server-build-docs.git
+   cd server-build-docs
+   ```
 
-## Name
-Choose a self-explaining name for your project.
+2. **Bắt đầu từ Wake On LAN**: Nền tảng cho toàn bộ quá trình tự động hóa
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+3. **Làm theo thứ tự**: Mỗi hướng dẫn xây dựng dựa trên kiến thức trước đó
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+4. **Thực hành & Thử nghiệm**: Tùy chỉnh script theo môi trường của bạn
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Vui lòng tạo issue hoặc gửi merge request nếu có góp ý.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## 📞 Hỗ trợ & Cộng đồng
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+- **Issues**: Sử dụng GitLab Issues cho câu hỏi/lỗi
+- **Thảo luận**: Chia sẻ kinh nghiệm và best practices
+- **Học tập**: Phù hợp cho sinh viên DevOps và người đam mê home lab
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## 🏷️ Tags
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+`#DevOps` `#HomeLab` `#ESXi` `#Automation` `#Infrastructure` `#WakeOnLAN` `#Vietnamese` `#SelfHosted` `#Learning`
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 📄 Giấy phép
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+MIT License - Miễn phí sử dụng cho mục đích giáo dục và cá nhân.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+---
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## 🎯 Bắt đầu nhanh
 
-## License
-For open source projects, say how it is licensed.
+**Mới học DevOps?** Bắt đầu tại đây: [Hướng dẫn Wake On LAN](WakeOnLans.md)  
+**Đã có kiến thức cơ bản?** Chuyển sang: [Hướng dẫn ESXi Autostart](ESXi-Autostart.md)  
+**Muốn tự động hóa toàn diện?** Làm theo toàn bộ lộ trình học!
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**Chúc bạn học tập vui vẻ! 🚀**

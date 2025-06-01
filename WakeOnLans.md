@@ -386,3 +386,31 @@ standby-server # Tắt server
 ✅ **DevOps Workflow**: Tích hợp tốt với daily development workflow  
 
 **Next steps**: Tích hợp vào CI/CD pipelines, monitoring alerts, và infrastructure automation workflows! 🚀
+
+---
+
+## 🔗 Bước tiếp theo: Complete Automation
+
+Wake On LAN chỉ là **bước đầu tiên** trong automation journey. Để có complete solution từ hardware đến application:
+
+**📋 Current workflow**: 
+```
+WOL → ESXi Boot → Manual VM start → Manual service start
+```
+
+**🎯 Next level workflow**: 
+```
+WOL → ESXi Boot → Auto VM start → Auto service start → All services ready!
+```
+
+### 🚀 Recommended Next Guide:
+**[ESXi VM Autostart & Service Automation](ESXi-Autostart.md)**
+
+**What you'll learn**:
+- ✅ **ESXi VM Autostart**: Tự động khởi động VMs khi server boot
+- ✅ **Service Automation**: Auto-start services trong VMs 
+- ✅ **Complete Workflow**: Zero manual intervention sau WOL
+- ✅ **Production Best Practices**: systemd, logging, monitoring
+- ✅ **Advanced DevOps Concepts**: Service orchestration, dependency management
+
+**Perfect progression**: Hardware automation → Application automation → Complete infrastructure automation! 🎯
