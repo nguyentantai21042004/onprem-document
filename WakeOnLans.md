@@ -16,311 +16,148 @@ Wake On LAN (WOL) là một trong những kỹ thuật cơ bản nhưng quan tr�
 
 ---
 
-## Cài đặt Wake On LAN
-
-### Yêu cầu hệ thống
-- Motherboard và network adapter hỗ trợ WOL
-- Network connection (Ethernet)
-- Cấu hình BIOS/UEFI phù hợp
-
 ## PHẦN A: THIẾT LẬP TRÊN ESXi SERVER
 
-### Bước 1: Kiểm tra và kích hoạt WoL trên ESXi
+### Bước 1: Kích hoạt Wake On LAN
 
-#### 1.1 SSH vào ESXi server:
+#### 1.1 SSH vào ESXi và enable WOL:
 ```bash
 ssh root@[IP_ESXi_server]
-# Nhập mật khẩu root
-```
 
-#### 1.2 Kiểm tra card mạng và WoL:
-```bash
-# Liệt kê card mạng
-esxcli network nic list
-
-# Kiểm tra chi tiết card mạng chính (thường là vmnic0)
-esxcli network nic get -n vmnic0
-
-# Kiểm tra WoL support và status
-ethtool vmnic0 | grep -i wake
-```
-
-**Kết quả mong đợi:**
-```
-Supports Wake-on: pumbg
-Wake-on: g
-```
-
-#### 1.3 Kích hoạt WoL (nếu chưa có "Wake-on: g"):
-```bash
+# Kích hoạt WOL cho network adapter chính
 ethtool -s vmnic0 wol g
+
+# Kiểm tra WOL đã được enable
+ethtool vmnic0 | grep -i wake
+# Kết quả mong đợi: Wake-on: g
 ```
 
-#### 1.4 Ghi nhớ MAC Address:
+#### 1.2 Cấu hình Power Management (khuyến nghị):
 ```bash
-esxcli network nic list | grep vmnic0
-```
-**Lưu lại MAC Address** (ví dụ: `00:e0:25:30:50:7b`)
-
-### Bước 2: Tạo script tự động kích hoạt WoL
-
-#### 2.1 Tạo script startup:
-```bash
-vi /etc/rc.local.d/local.sh
-```
-
-#### 2.2 Nhập nội dung sau:
-```bash
-#!/bin/sh
-# Auto-enable Wake on LAN for vmnic0
-/usr/lib/vmware/ethtool/bin/ethtool -s vmnic0 wol g
-exit 0
-```
-
-**Mục đích:** 
-- Tạo file script trong thư mục `/etc/rc.local.d/`
-- **Tại sao ở đây?** ESXi tự động chạy tất cả script trong thư mục này khi khởi động
-- **Tương tự:** Như "Startup Programs" trong Windows
-
-Gõ `:wq` và ấn `Enter` để lưu
-
-#### 2.3 Phân quyền cho script:
-```bash
-chmod +x /etc/rc.local.d/local.sh
-```
-
-#### 2.4 Test script:
-```bash
-# Chạy script để test
-/etc/rc.local.d/local.sh
-
-# Kiểm tra kết quả
-ethtool vmnic0 | grep "Wake-on"
-```
-
-#### 2.5 Luồng hoạt động:
-```
-ESXi khởi động
-    ↓
-Chạy tất cả script trong /etc/rc.local.d/
-    ↓
-Chạy local.sh
-    ↓
-Thực thi: ethtool -s vmnic0 wol g
-    ↓
-Wake on LAN được bật tự động
-    ↓
-ESXi sẵn sàng nhận Magic Packet
-```
-
-### Bước 3: Cấu hình Power Management
-
-**Tại sao cần bước này?**
-- ESXi mặc định có thể sử dụng các chế độ tiết kiệm điện (P-States, C-States)
-- Các chế độ này có thể làm network adapter "ngủ sâu" và không phản hồi Magic Packet
-- Cấu hình High Performance đảm bảo network luôn sẵn sàng nhận WOL
-
-#### 3.1 Cấu hình Power Policy:
-```bash
-# Set High Performance mode
+# Set High Performance mode để đảm bảo WOL ổn định
 esxcli system settings advanced set -o /Power/CpuPolicy -s "High Performance"
 
-# Disable P-States (optional)
-esxcli system settings advanced set -o /Power/UsePStates -i 0
-```
-
-#### 3.2 Kiểm tra cấu hình:
-```bash
 # Kiểm tra cấu hình
 esxcli system settings advanced list -o /Power/CpuPolicy
-esxcli system settings advanced list -o /Power/UsePStates
 ```
 
-**Kết quả mong đợi:**
-- CpuPolicy: "High Performance" 
-- UsePStates: 0 (disabled)
-
-**Lưu ý:** Cấu hình này sẽ tăng mức tiêu thụ điện nhưng đảm bảo WOL hoạt động ổn định 100%.
-
-
-### Bước 4: Tạo script shutdown (standby) tiện lợi
-
-**Mục đích**: Tạo script để gracefully shutdown ESXi và chuẩn bị cho Wake On LAN
-
-
-### Shutdown vs Standby - Hiểu đúng khái niệm
-
-#### **Shutdown (Tắt nguồn hoàn toàn):**
-- **Power state**: S5 (Soft Off)
-- **Đặc điểm**: Tắt hoàn toàn, chỉ giữ power tối thiểu cho network adapter
-- **WOL**: Có thể wake up nếu network adapter được cấp nguồn
-- **Tiêu thụ điện**: ~5-10W (chỉ PSU standby + network)
-- **Khởi động**: Chậm (full boot process)
-
-#### **Standby (Chế độ ngủ):**
-- **Power state**: S3 (Suspend to RAM) 
-- **Đặc điểm**: RAM vẫn được cấp nguồn, CPU và storage ngủ
-- **WOL**: Wake up rất nhanh vì RAM còn data
-- **Tiêu thụ điện**: ~15-30W (RAM + essential components)
-- **Khởi động**: Nhanh (resume từ RAM)
-
-#### **Lựa chọn nào cho ESXi?**
-**ESXi không hỗ trợ standby (S3) mode**, chỉ có:
-- **Running**: Hoạt động bình thường
-- **Maintenance Mode**: Chuẩn bị shutdown
-- **Shutdown**: Tắt hoàn toàn (S5)
-
-**→ "Standby" trong ESXi = Shutdown với WOL enabled**
-
-#### 4.1 Tạo script shutdown:
+#### 1.3 Lưu MAC Address:
 ```bash
-vi /root/standby.sh
+# Lấy MAC address của vmnic0
+esxcli network nic list | grep vmnic0
 ```
-
-#### 4.2 Nội dung script:
-```bash
-#!/bin/sh
-echo "Preparing server for Wake on LAN..."
-echo "Entering maintenance mode..."
-esxcli system maintenanceMode set -e true
-
-echo "Waiting 5 seconds for services to stop..."
-sleep 5
-
-echo "Shutting down to standby mode..."
-echo "Server will be ready for Wake on LAN"
-esxcli system shutdown poweroff -d 10 -r "Standby for WoL - $(date)"
-```
-
-#### 4.3 Phân quyền:
-```bash
-chmod +x /root/standby.sh
-```
-
-#### 4.4 Sử dụng script:
-```bash
-# Chạy script để shutdown ESXi một cách an toàn
-/root/standby.sh
-```
-
-**Workflow của script:**
-1. **Maintenance mode**: Đảm bảo VMs được migrate/shutdown properly
-2. **Delay 5s**: Cho các service dừng hoàn toàn
-3. **Graceful shutdown**: Shutdown với message và delay 10s
-4. **WOL ready**: Server sẵn sàng nhận Magic Packet
+**📝 Ghi nhớ MAC Address này** (ví dụ: `00:e0:25:30:50:7b`)
 
 ---
 
-## PHẦN B: THIẾT LẬP TRÊN MÁY CLIENT
+## PHẦN B: THIẾT LẬP CLIENT-SIDE AUTOMATION
 
-### 🍎 THIẾT LẬP TRÊN macOS
+### 🍎 macOS Setup (Recommended Approach)
 
-#### B.1 Cài đặt wakeonlan:
+#### B.1 Cài đặt công cụ cần thiết:
 ```bash
-# Sử dụng Homebrew (nếu chưa có Homebrew, cài đặt tại: https://brew.sh)
+# Cài đặt wakeonlan
 brew install wakeonlan
 ```
 
-#### B.2 Tạo alias tiện lợi:
+#### B.2 Thêm functions vào ~/.zshrc:
+
 ```bash
-# Mở file cấu hình shell
+# Mở file cấu hình
 nano ~/.zshrc
-# Hoặc nano ~/.bash_profile (nếu dùng bash)
 
-# Thêm dòng sau (thay MAC address của bạn):
-alias wakeserver="wakeonlan 00:e0:25:30:50:7b"
+# Thêm phần này vào cuối file:
+```
 
-# Lưu file và reload
+```bash
+## Server Management Functions ##
+alias ssh-server="ssh root@192.168.1.50"  # Thay IP của bạn
+
+# Wake server với smart checking
+wake-server() {
+    SERVER_IP="192.168.1.50"              # Thay IP ESXi server của bạn
+    SERVER_MAC="00:e0:25:30:50:7b"        # Thay MAC address của bạn
+
+    echo "[INFO] Checking server status"
+    if ping -c 1 -W 5 $SERVER_IP > /dev/null 2>&1; then
+        echo "[INFO] Server is online"
+        echo "[INFO] ESXi URL: https://$SERVER_IP"
+    else
+        echo "[WARN] Server is offline. Sending WOL packet"
+        wakeonlan $SERVER_MAC
+        echo "[INFO] WOL packet sent"
+        echo "[INFO] Waiting for server startup"
+        
+        # Wait up to 60 seconds
+        for i in {1..12}; do
+            sleep 5
+            if ping -c 1 -W 5 $SERVER_IP > /dev/null 2>&1; then
+                echo "[INFO] Server online after $((i*5))s"
+                echo "[INFO] ESXi URL: https://$SERVER_IP"
+                return 0
+            fi
+            echo "[INFO] Waiting... ($((i*5))s elapsed)"
+        done
+        echo "[WARN] Timeout reached. Check https://$SERVER_IP manually"
+    fi
+}
+
+# Standby server (graceful shutdown)
+standby-server() {
+    echo "[INFO] Sending standby command to server"
+    ssh-server "echo 'Preparing server for Wake on LAN...' && \
+                echo 'Checking maintenance mode...' && \
+                if esxcli system maintenanceMode get | grep -q Enabled; then \
+                    echo 'Maintenance mode already enabled - OK'; \
+                else \
+                    echo 'Entering maintenance mode...' && \
+                    esxcli system maintenanceMode set -e true; \
+                fi && \
+                echo 'Waiting 5 seconds for services to stop...' && \
+                sleep 5 && \
+                echo 'Shutting down to standby mode...' && \
+                echo 'Server will be ready for Wake on LAN' && \
+                esxcli system shutdown poweroff -d 10 -r \"Standby for WoL - \$(date)\""
+    echo "[INFO] Standby command sent"
+}
+
+# Quick wake alias
+alias wakeserver="wakeonlan 00:e0:25:30:50:7b"  # Thay MAC của bạn
+```
+
+#### B.3 Reload cấu hình:
+```bash
 source ~/.zshrc
 ```
 
-#### B.3 Tạo script thông minh wake_and_check_server.sh:
-```bash
-nano ~/wake_and_check_server.sh
-```
+### 💻 Windows Setup
 
-**Nội dung:**
-```bash
-#!/bin/bash
-SERVER_IP="192.168.1.50"  # Thay IP ESXi server của bạn
-SERVER_MAC="00:e0:25:30:50:7b"  # Thay MAC address của bạn
-
-echo "🔍 Checking server status..."
-if ping -c 1 -W 5 $SERVER_IP > /dev/null 2>&1; then
-    echo "✅ Server is already UP and running!"
-    echo "🌐 You can access ESXi at: https://$SERVER_IP"
-else
-    echo "❌ Server is DOWN. Sending Wake on LAN packet..."
-    wakeonlan $SERVER_MAC
-    echo "⚡ Magic packet sent!"
-    echo "⏳ Waiting for server to wake up..."
-    
-    # Đợi tối đa 60 giây
-    for i in {1..12}; do
-        sleep 5
-        if ping -c 1 -W 5 $SERVER_IP > /dev/null 2>&1; then
-            echo "✅ Server is now UP! (took $((i*5)) seconds)"
-            echo "🌐 ESXi Web Client: https://$SERVER_IP"
-            exit 0
-        fi
-        echo "⏳ Still waiting... ($((i*5)) seconds elapsed)"
-    done
-    echo "⚠️ Server might need more time. Check manually at: https://$SERVER_IP"
-fi
-```
-
-#### B.4 Phân quyền:
-```bash
-chmod +x ~/wake_and_check_server.sh
-```
-
-#### B.5 Sử dụng script:
-```bash
-# Cách 1: Chạy script đầy đủ
-~/wake_and_check_server.sh
-
-# Cách 2: Chỉ wake (dùng alias)
-wakeserver
-```
-
-**Tính năng của script:**
-- **Smart check**: Kiểm tra server trước khi wake
-- **Auto-wait**: Đợi server boot up và hiển thị thời gian
-- **User-friendly**: Messages rõ ràng với emoji
-- **Timeout handling**: Không đợi vô hạn
-- **Direct access**: Cung cấp link ESXi Web Client
-
-**Output mẫu:**
-```
-🔍 Checking server status...
-❌ Server is DOWN. Sending Wake on LAN packet...
-⚡ Magic packet sent!
-⏳ Waiting for server to wake up...
-⏳ Still waiting... (5 seconds elapsed)
-⏳ Still waiting... (10 seconds elapsed)
-✅ Server is now UP! (took 15 seconds)
-🌐 ESXi Web Client: https://192.168.1.100
-```
-
-### 💻 THIẾT LẬP TRÊN WINDOWS
-
-#### B.1 Tạo PowerShell script:
-
-**Tạo file `WakeServer.ps1`:**
+#### B.1 Tạo PowerShell script `ServerManager.ps1`:
 ```powershell
-# Wake on LAN Script for ESXi Server
+# ESXi Server Management Script
 param(
-    [string]$MacAddress = "00:e0:25:30:50:7b",  # Thay MAC của bạn
-    [string]$ServerIP = "192.168.1.100"         # Thay IP của bạn
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("wake", "standby", "status")]
+    [string]$Action = "wake",
+    
+    [string]$ServerIP = "192.168.1.50",        # Thay IP của bạn
+    [string]$MacAddress = "00:e0:25:30:50:7b", # Thay MAC của bạn
+    [string]$Username = "root"
 )
 
+function Test-ServerStatus {
+    param([string]$IP)
+    Write-Host "[INFO] Checking server status at $IP..." -ForegroundColor Cyan
+    $ping = Test-Connection -ComputerName $IP -Count 1 -Quiet -ErrorAction SilentlyContinue
+    return $ping
+}
+
 function Send-WakeOnLan {
-    param([string]$MacAddress)
-    
-    Write-Host "📡 Sending Wake on LAN packet to $MacAddress..." -ForegroundColor Yellow
+    param([string]$Mac)
+    Write-Host "[INFO] Sending WOL packet to $Mac..." -ForegroundColor Yellow
     
     try {
-        $mac = $MacAddress -replace '[:-]'
+        $mac = $Mac -replace '[:-]'
         $target = 0,2,4,6,8,10 | ForEach-Object {[convert]::ToByte($mac.substring($_,2),16)}
         $packet = (,[byte]255 * 6) + ($target * 16)
         
@@ -329,264 +166,223 @@ function Send-WakeOnLan {
         [void]$UDPclient.Send($packet, $packet.Length)
         $UDPclient.Close()
         
-        Write-Host "✅ Magic packet sent successfully!" -ForegroundColor Green
+        Write-Host "[INFO] WOL packet sent successfully!" -ForegroundColor Green
         return $true
     }
     catch {
-        Write-Host "❌ Error sending magic packet: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[ERROR] Failed to send WOL packet: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
 
-function Test-ServerStatus {
-    param([string]$ServerIP)
+function Invoke-ServerStandby {
+    param([string]$IP, [string]$User)
+    Write-Host "[INFO] Sending standby command to server..." -ForegroundColor Yellow
     
-    Write-Host "🔍 Checking server status at $ServerIP..." -ForegroundColor Cyan
-    
-    $ping = Test-Connection -ComputerName $ServerIP -Count 1 -Quiet -ErrorAction SilentlyContinue
-    return $ping
-}
+    $standbyCommand = @"
+echo 'Preparing server for Wake on LAN...' && \
+echo 'Checking maintenance mode...' && \
+if esxcli system maintenanceMode get | grep -q Enabled; then \
+    echo 'Maintenance mode already enabled - OK'; \
+else \
+    echo 'Entering maintenance mode...' && \
+    esxcli system maintenanceMode set -e true; \
+fi && \
+echo 'Waiting 5 seconds for services to stop...' && \
+sleep 5 && \
+echo 'Shutting down to standby mode...' && \
+echo 'Server will be ready for Wake on LAN' && \
+esxcli system shutdown poweroff -d 10 -r \"Standby for WoL - \$(date)\"
+"@
 
-# Main execution
-Write-Host "=== ESXi Server Wake on LAN Tool ===" -ForegroundColor Magenta
-Write-Host ""
-
-if (Test-ServerStatus -ServerIP $ServerIP) {
-    Write-Host "✅ Server is already UP and running!" -ForegroundColor Green
-    Write-Host "🌐 ESXi Web Client: https://$ServerIP" -ForegroundColor Cyan
-} else {
-    Write-Host "❌ Server appears to be DOWN" -ForegroundColor Red
-    
-    if (Send-WakeOnLan -MacAddress $MacAddress) {
-        Write-Host "⏳ Waiting for server to wake up..." -ForegroundColor Yellow
-        
-        # Đợi tối đa 60 giây
-        for ($i = 1; $i -le 12; $i++) {
-            Start-Sleep -Seconds 5
-            if (Test-ServerStatus -ServerIP $ServerIP) {
-                Write-Host "✅ Server is now UP! (took $($i*5) seconds)" -ForegroundColor Green
-                Write-Host "🌐 ESXi Web Client: https://$ServerIP" -ForegroundColor Cyan
-                break
-            }
-            Write-Host "   ⏳ Still waiting... ($($i*5) seconds elapsed)" -ForegroundColor Gray
-        }
-        
-        if (-not (Test-ServerStatus -ServerIP $ServerIP)) {
-            Write-Host "⚠️  Server might need more time. Check manually at: https://$ServerIP" -ForegroundColor Yellow
-        }
+    try {
+        ssh "$User@$IP" $standbyCommand
+        Write-Host "[INFO] Standby command sent successfully!" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "[ERROR] Failed to send standby command: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
-Write-Host ""
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+# Main execution
+switch ($Action) {
+    "wake" {
+        if (Test-ServerStatus -IP $ServerIP) {
+            Write-Host "[INFO] Server is already online!" -ForegroundColor Green
+            Write-Host "[INFO] ESXi URL: https://$ServerIP" -ForegroundColor Cyan
+        } else {
+            Write-Host "[WARN] Server is offline. Waking up..." -ForegroundColor Yellow
+            if (Send-WakeOnLan -Mac $MacAddress) {
+                Write-Host "[INFO] Waiting for server to boot up..." -ForegroundColor Yellow
+                
+                for ($i = 1; $i -le 12; $i++) {
+                    Start-Sleep -Seconds 5
+                    if (Test-ServerStatus -IP $ServerIP) {
+                        Write-Host "[INFO] Server online after $($i*5) seconds!" -ForegroundColor Green
+                        Write-Host "[INFO] ESXi URL: https://$ServerIP" -ForegroundColor Cyan
+                        return
+                    }
+                    Write-Host "[INFO] Waiting... ($($i*5)s elapsed)" -ForegroundColor Gray
+                }
+                Write-Host "[WARN] Timeout reached. Check https://$ServerIP manually" -ForegroundColor Yellow
+            }
+        }
+    }
+    
+    "standby" {
+        if (Test-ServerStatus -IP $ServerIP) {
+            Invoke-ServerStandby -IP $ServerIP -User $Username
+        } else {
+            Write-Host "[WARN] Server appears to be offline already." -ForegroundColor Yellow
+        }
+    }
+    
+    "status" {
+        if (Test-ServerStatus -IP $ServerIP) {
+            Write-Host "[INFO] Server is ONLINE" -ForegroundColor Green
+            Write-Host "[INFO] ESXi URL: https://$ServerIP" -ForegroundColor Cyan
+        } else {
+            Write-Host "[INFO] Server is OFFLINE" -ForegroundColor Red
+        }
+    }
+}
 ```
 
-#### B.2 Tạo Batch file wrapper:
+#### B.2 Tạo batch wrappers:
 
-**Tạo file `WakeServer.bat`:**
+**WakeServer.bat:**
 ```batch
 @echo off
-title ESXi Server Wake on LAN
-echo Starting Wake on LAN tool...
-powershell -ExecutionPolicy Bypass -File "%~dp0WakeServer.ps1"
-```
-
-#### B.3 Tạo shortcut đơn giản:
-
-**Tạo file `QuickWake.bat`:**
-```batch
-@echo off
-title Quick Wake ESXi Server
-echo Sending Wake on LAN packet...
-powershell -Command "& {
-    $mac = '00:e0:25:30:50:7b'
-    $target = 0,2,4,6,8,10 | ForEach-Object {[convert]::ToByte($mac.substring($_,2),16)}
-    $packet = (,[byte]255 * 6) + ($target * 16)
-    $UDPclient = New-Object System.Net.Sockets.UdpClient
-    $UDPclient.Connect(([System.Net.IPAddress]::Broadcast),9)
-    [void]$UDPclient.Send($packet, $packet.Length)
-    $UDPclient.Close()
-    Write-Host 'Magic packet sent to ESXi server!'
-}"
-echo.
-echo Magic packet sent! Server should wake up in 30-60 seconds.
-echo You can access ESXi at: https://192.168.1.100
-echo.
+title Wake ESXi Server
+powershell -ExecutionPolicy Bypass -File "%~dp0ServerManager.ps1" -Action wake
 pause
 ```
 
-**Cách sử dụng:**
-- **`WakeServer.ps1`**: Script đầy đủ với kiểm tra và feedback
-- **`WakeServer.bat`**: Wrapper để chạy PowerShell dễ dàng
-- **`QuickWake.bat`**: Quick wake không kiểm tra, chạy nhanh
-
-**Đặc điểm Windows scripts:**
-- **Full-featured**: Giống macOS script với đầy đủ tính năng
-- **Error handling**: Xử lý lỗi PowerShell execution policy
-- **Visual feedback**: Colored output và progress indication
-- **User-friendly**: Press any key to exit
-- **No dependencies**: Sử dụng built-in Windows PowerShell
+**StandbyServer.bat:**
+```batch
+@echo off
+title Standby ESXi Server
+powershell -ExecutionPolicy Bypass -File "%~dp0ServerManager.ps1" -Action standby
+pause
+```
 
 ---
 
 ## PHẦN C: QUY TRÌNH SỬ DỤNG HÀNG NGÀY
 
-### 🔽 TẮT SERVER (vào Standby Mode):
+### 🚀 macOS Daily Usage:
 
-#### Cách 1: SSH command:
 ```bash
-ssh root@[IP_ESXi_server]
-/root/standby.sh
-```
+# Bật server (với kiểm tra thông minh)
+wake-server
 
-#### Cách 2: ESXi Web Client:
-1. Truy cập `https://[IP_ESXi_server]`
-2. Đăng nhập bằng root
-3. **Host → Actions → Enter Standby Mode**
+# Tắt server (graceful shutdown)
+standby-server
 
-#### Cách 3: Command line trực tiếp:
-```bash
-ssh root@[IP_ESXi_server] "esxcli system maintenanceMode set -e true && esxcli system shutdown poweroff -d 10 -r 'Standby for WoL'"
-```
-
-### 🔼 BẬT SERVER:
-
-#### macOS:
-```bash
-# Cách đơn giản
+# Quick wake (không kiểm tra)
 wakeserver
 
-# Hoặc dùng script đầy đủ
-~/wake_and_check_server.sh
-
-# Hoặc dùng app GUI
-# Click vào WakeServer.app trên Desktop
+# SSH vào server
+ssh-server
 ```
 
-#### Windows:
-```batch
-REM Cách đơn giản
-QuickWake.bat
+### 💻 Windows Daily Usage:
 
-REM Hoặc dùng PowerShell script đầy đủ
+```powershell
+# Bật server
+.\ServerManager.ps1 -Action wake
+
+# Tắt server  
+.\ServerManager.ps1 -Action standby
+
+# Kiểm tra status
+.\ServerManager.ps1 -Action status
+
+# Hoặc dùng batch files
 WakeServer.bat
-
-REM Hoặc dùng GUI
-WakeServer.vbs
+StandbyServer.bat
 ```
 
 ---
 
-## PHẦN D: KIỂM TRA VÀ TROUBLESHOOTING
+## PHẦN D: TROUBLESHOOTING
 
-### D.1 Kiểm tra WoL hoạt động:
+### D.1 Kiểm tra WOL trên ESXi:
 ```bash
-# Trên ESXi server
+ssh root@[IP_ESXi]
 ethtool vmnic0 | grep -i wake
 # Phải thấy: Wake-on: g
-
-# Kiểm tra script startup
-ls -la /etc/rc.local.d/local.sh
-/etc/rc.local.d/local.sh
 ```
 
-### D.2 Test hoàn chỉnh:
+### D.2 Test kết nối:
 ```bash
-# 1. Từ ESXi: Vào standby
-/root/standby.sh
+# Test ping từ client
+ping [IP_ESXi]
 
-# 2. Từ client: Wake server
-wakeonlan 00:e0:25:30:50:7b
-
-# 3. Kiểm tra ping
-ping [IP_ESXi_server]
+# Test SSH connection
+ssh root@[IP_ESXi] "echo 'Connection OK'"
 ```
 
 ### D.3 Các vấn đề thường gặp:
 
-#### ❌ WoL không hoạt động:
-- Kiểm tra dây nguồn có cắm không
-- Kiểm tra công tắc PSU có ON không
-- Kiểm tra network switch có bật không
-- Ping thử từ máy client đến server khi server đang chạy
+**❌ WOL không hoạt động:**
+- Kiểm tra server có power (PSU switch ON)
+- Kiểm tra network cable
+- Verify MAC address đúng
+- Test trong cùng subnet
 
-#### ❌ Script không chạy:
-```bash
-# Kiểm tra quyền file
-ls -la /etc/rc.local.d/local.sh
-# Phải có 'x' trong permissions
-
-# Test script thủ công
-/etc/rc.local.d/local.sh
-```
+**❌ SSH connection failed:**
+- Kiểm tra SSH service enabled trên ESXi
+- Verify firewall settings
+- Check IP address chính xác
 
 ---
 
 ## PHẦN E: TÓM TẮT NHANH
 
-### 🚀 Setup ban đầu (làm 1 lần):
+### 🎯 Ưu điểm của Client-side Approach:
+
+**✅ Centralized Management**: Tất cả scripts ở client, dễ maintain  
+**✅ Version Control**: Scripts có thể commit vào git  
+**✅ Backup Friendly**: Backup cùng với dotfiles  
+**✅ Multi-server Ready**: Dễ extend cho nhiều servers  
+**✅ No Server Dependencies**: Không cần maintain scripts trên server  
+
+### 📋 Setup tóm tắt:
 
 ```bash
-# Trên ESXi
-ssh root@[IP_ESXi]
-ethtool -s vmnic0 wol g
-vi /etc/rc.local.d/local.sh    # Paste script tự động
-chmod +x /etc/rc.local.d/local.sh
-vi /root/standby.sh            # Paste script shutdown
-chmod +x /root/standby.sh
+# 1. ESXi one-time setup
+ssh root@[IP] "ethtool -s vmnic0 wol g"
 
-# Trên macOS
+# 2. macOS setup
 brew install wakeonlan
-echo 'alias wakeserver="wakeonlan [MAC_ADDRESS]"' >> ~/.zshrc
+# Thêm functions vào ~/.zshrc
+source ~/.zshrc
 
-# Trên Windows
-# Tạo các file .bat và .ps1 như hướng dẫn trên
+# 3. Daily usage
+wake-server    # Bật server
+standby-server # Tắt server
 ```
 
-### 🖥️ Sử dụng hàng ngày:
+### 🔧 Configuration checklist:
 
-```bash
-# TẮT server
-ssh root@[IP_ESXi] "/root/standby.sh"
-
-# BẬT server
-wakeonlan [MAC_ADDRESS]    # macOS/Linux
-QuickWake.bat              # Windows
-```
-
-### 📝 Lưu ý quan trọng:
-
-**🔧 Hardware:**
-- Server phải hỗ trợ WoL
-- Dây mạng phải cắm vào port chính
-- PSU phải có standby power
-
-**⚙️ Software:**  
-- ESXi script tự động enable WoL mỗi lần boot
-- Client scripts có check server status
-- Graceful shutdown để protect VMs
-
-**🌐 Network:**
-- Magic packet chỉ hoạt động trong cùng subnet
-- Router/switch phải forward broadcast packets
-- Firewall không block UDP port 9
-
-**⚡ Power:**
-- High Performance mode đảm bảo WoL ổn định
-- Trade-off: +10-30W tiêu thụ điện
-- Essential cho home lab/learning environment
+- [ ] ESXi WOL enabled: `ethtool vmnic0 | grep "Wake-on: g"`
+- [ ] MAC address đúng trong scripts
+- [ ] IP address đúng trong scripts  
+- [ ] SSH key setup (optional): `ssh-copy-id root@[IP]`
+- [ ] Network trong cùng subnet
+- [ ] Firewall không block UDP port 9
 
 ---
 
 ## 🎓 KẾT LUẬN
 
-Wake On LAN là **foundation skill** quan trọng cho DevOps journey:
+**Client-side approach** cho Wake On LAN mang lại nhiều lợi ích cho DevOps learning:
 
-✅ **Infrastructure automation** - Remote power management  
-✅ **Network fundamentals** - Magic packets, broadcast, UDP  
-✅ **Scripting practice** - Cross-platform automation  
-✅ **Troubleshooting skills** - Hardware + software debugging  
-✅ **Documentation habits** - Essential cho production environments  
+✅ **Infrastructure as Code**: Scripts client-side dễ version control  
+✅ **Automation Best Practices**: Centralized management, smart checking  
+✅ **Scalability**: Dễ mở rộng cho multiple servers  
+✅ **Maintainability**: Không phụ thuộc vào server-side scripts  
+✅ **DevOps Workflow**: Tích hợp tốt với daily development workflow  
 
-**Next steps:** Tích hợp WoL vào CI/CD pipelines, monitoring systems, và infrastructure-as-code workflows! 🚀
+**Next steps**: Tích hợp vào CI/CD pipelines, monitoring alerts, và infrastructure automation workflows! 🚀
