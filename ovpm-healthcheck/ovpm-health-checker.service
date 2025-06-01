@@ -1,0 +1,27 @@
+[Unit]
+Description=OVPM Health Checker Service
+After=network.target ovpmd.service
+Wants=ovpmd.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/ovpm-health-checker
+ExecStart=/usr/bin/python3 /opt/ovpm-health-checker/ovpm_health_checker.py
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/log /opt/ovpm-health-checker
+
+[Install]
+WantedBy=multi-user.target 
