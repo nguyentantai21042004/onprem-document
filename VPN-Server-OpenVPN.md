@@ -6,13 +6,13 @@ OpenVPN Server với OVPM là **bước advanced level** trong home lab DevOps j
 
 ### Tại sao OpenVPN quan trọng cho DevOps?
 
-**Enterprise Security**: PKI certificates, encryption, và authentication - standard trong production environments.
+**Bảo mật doanh nghiệp**: PKI certificates, mã hóa, và xác thực - tiêu chuẩn trong môi trường production.
 
-**Database Access**: Secure access tới database VMs từ bất kỳ đâu.
+**Truy cập cơ sở dữ liệu**: Truy cập an toàn tới database VMs từ bất kỳ đâu.
 
-**Zero Trust Architecture**: User-based authentication thay vì network-based access.
+**Kiến trúc Zero Trust**: Xác thực dựa trên người dùng thay vì truy cập dựa trên mạng.
 
-**Centralized Management**: Web interface để quản lý users và configurations.
+**Quản lý tập trung**: Giao diện web để quản lý người dùng và cấu hình.
 
 ---
 
@@ -22,8 +22,8 @@ Triển khai VPN Server riêng với các mục đích sau:
 
 - **Truy cập mạng LAN từ xa**: Kết nối an toàn vào mạng nội bộ từ bất kỳ đâu
 - **Truy cập các VM Database**: Kết nối trực tiếp đến các máy ảo đang chạy database trong mạng LAN  
-- **Xuất file .ovpn**: Tạo file cấu hình VPN cho các devices
-- **Quản lý tập trung**: Sử dụng Web interface để quản lý users và cấu hình
+- **Xuất file .ovpn**: Tạo file cấu hình VPN cho các thiết bị
+- **Quản lý tập trung**: Sử dụng giao diện Web để quản lý người dùng và cấu hình
 
 **Thông số server:**
 - IP Server: `192.168.1.210`
@@ -666,13 +666,12 @@ Edit trong `ovpm_health_checker.py`:
 # Change from hourly to every 30 minutes
 schedule.every(30).minutes.do(run_health_check)
 ```
-
-### Custom Discord Formatting:
+### Định dạng Discord Tùy chỉnh:
 Script sử dụng rich embeds với:
-- Color coding based on health status
-- Vietnam timezone display
-- Detailed metrics với icons
-- Process monitoring information
+- Mã màu dựa trên trạng thái sức khỏe
+- Hiển thị múi giờ Việt Nam
+- Số liệu chi tiết với các biểu tượng
+- Thông tin giám sát tiến trình
 
 ## 🚨 Common Issues & Solutions
 
