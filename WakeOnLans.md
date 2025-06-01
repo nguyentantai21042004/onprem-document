@@ -427,3 +427,166 @@ pause
 - **Visual feedback**: Colored output và progress indication
 - **User-friendly**: Press any key to exit
 - **No dependencies**: Sử dụng built-in Windows PowerShell
+
+---
+
+## PHẦN C: QUY TRÌNH SỬ DỤNG HÀNG NGÀY
+
+### 🔽 TẮT SERVER (vào Standby Mode):
+
+#### Cách 1: SSH command:
+```bash
+ssh root@[IP_ESXi_server]
+/root/standby.sh
+```
+
+#### Cách 2: ESXi Web Client:
+1. Truy cập `https://[IP_ESXi_server]`
+2. Đăng nhập bằng root
+3. **Host → Actions → Enter Standby Mode**
+
+#### Cách 3: Command line trực tiếp:
+```bash
+ssh root@[IP_ESXi_server] "esxcli system maintenanceMode set -e true && esxcli system shutdown poweroff -d 10 -r 'Standby for WoL'"
+```
+
+### 🔼 BẬT SERVER:
+
+#### macOS:
+```bash
+# Cách đơn giản
+wakeserver
+
+# Hoặc dùng script đầy đủ
+~/wake_and_check_server.sh
+
+# Hoặc dùng app GUI
+# Click vào WakeServer.app trên Desktop
+```
+
+#### Windows:
+```batch
+REM Cách đơn giản
+QuickWake.bat
+
+REM Hoặc dùng PowerShell script đầy đủ
+WakeServer.bat
+
+REM Hoặc dùng GUI
+WakeServer.vbs
+```
+
+---
+
+## PHẦN D: KIỂM TRA VÀ TROUBLESHOOTING
+
+### D.1 Kiểm tra WoL hoạt động:
+```bash
+# Trên ESXi server
+ethtool vmnic0 | grep -i wake
+# Phải thấy: Wake-on: g
+
+# Kiểm tra script startup
+ls -la /etc/rc.local.d/local.sh
+/etc/rc.local.d/local.sh
+```
+
+### D.2 Test hoàn chỉnh:
+```bash
+# 1. Từ ESXi: Vào standby
+/root/standby.sh
+
+# 2. Từ client: Wake server
+wakeonlan 00:e0:25:30:50:7b
+
+# 3. Kiểm tra ping
+ping [IP_ESXi_server]
+```
+
+### D.3 Các vấn đề thường gặp:
+
+#### ❌ WoL không hoạt động:
+- Kiểm tra dây nguồn có cắm không
+- Kiểm tra công tắc PSU có ON không
+- Kiểm tra network switch có bật không
+- Ping thử từ máy client đến server khi server đang chạy
+
+#### ❌ Script không chạy:
+```bash
+# Kiểm tra quyền file
+ls -la /etc/rc.local.d/local.sh
+# Phải có 'x' trong permissions
+
+# Test script thủ công
+/etc/rc.local.d/local.sh
+```
+
+---
+
+## PHẦN E: TÓM TẮT NHANH
+
+### 🚀 Setup ban đầu (làm 1 lần):
+
+```bash
+# Trên ESXi
+ssh root@[IP_ESXi]
+ethtool -s vmnic0 wol g
+vi /etc/rc.local.d/local.sh    # Paste script tự động
+chmod +x /etc/rc.local.d/local.sh
+vi /root/standby.sh            # Paste script shutdown
+chmod +x /root/standby.sh
+
+# Trên macOS
+brew install wakeonlan
+echo 'alias wakeserver="wakeonlan [MAC_ADDRESS]"' >> ~/.zshrc
+
+# Trên Windows
+# Tạo các file .bat và .ps1 như hướng dẫn trên
+```
+
+### 🖥️ Sử dụng hàng ngày:
+
+```bash
+# TẮT server
+ssh root@[IP_ESXi] "/root/standby.sh"
+
+# BẬT server
+wakeonlan [MAC_ADDRESS]    # macOS/Linux
+QuickWake.bat              # Windows
+```
+
+### 📝 Lưu ý quan trọng:
+
+**🔧 Hardware:**
+- Server phải hỗ trợ WoL
+- Dây mạng phải cắm vào port chính
+- PSU phải có standby power
+
+**⚙️ Software:**  
+- ESXi script tự động enable WoL mỗi lần boot
+- Client scripts có check server status
+- Graceful shutdown để protect VMs
+
+**🌐 Network:**
+- Magic packet chỉ hoạt động trong cùng subnet
+- Router/switch phải forward broadcast packets
+- Firewall không block UDP port 9
+
+**⚡ Power:**
+- High Performance mode đảm bảo WoL ổn định
+- Trade-off: +10-30W tiêu thụ điện
+- Essential cho home lab/learning environment
+
+---
+
+## 🎓 KẾT LUẬN
+
+Wake On LAN là **foundation skill** quan trọng cho DevOps journey:
+
+✅ **Infrastructure automation** - Remote power management  
+✅ **Network fundamentals** - Magic packets, broadcast, UDP  
+✅ **Scripting practice** - Cross-platform automation  
+✅ **Troubleshooting skills** - Hardware + software debugging  
+✅ **Documentation habits** - Essential cho production environments  
+
+**Next steps:** Tích hợp WoL vào CI/CD pipelines, monitoring systems, và infrastructure-as-code workflows! 🚀
