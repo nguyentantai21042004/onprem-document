@@ -405,18 +405,18 @@ WOL → ESXi Boot → Auto VM start → Auto service start → External access r
 
 ### 🚀 Recommended Learning Path:
 
-#### **Step 1: [ESXi VM Autostart & Service Automation](ESXi-Autostart.md)**
+#### **Step 1: [ESXi VM Autostart & Service Automation](ESXi-VM-Autostart.md)**
 **What you'll learn**:
 - ✅ **ESXi VM Autostart**: Tự động khởi động VMs khi server boot
 - ✅ **Service Automation**: Auto-start services trong VMs 
 - ✅ **Complete Workflow**: Zero manual intervention sau WOL
 - ✅ **Production Best Practices**: systemd, logging, monitoring
 
-#### **Step 2: [Port Forwarding & Network Services](ForwardPort.md)**
+#### **Step 2: [Port Forwarding & Network Services](Port-Forwarding.md)**
 **What you'll learn**:
 - ✅ **Service Exposure**: Expose internal services ra external network
 - ✅ **Network Security**: Router configuration, firewall, best practices
 - ✅ **Production Deployment**: SSL, reverse proxy, monitoring
 - ✅ **DevOps Skills**: Service discovery, load balancing concepts
 
-**Perfect progression**: Hardware automation → Application automation → Network automation → Complete infrastructure automation! 🎯
+**Perfect progression**: Hardware automation → Application automation → Network automation → Complete infrastructure automation! 🎯 

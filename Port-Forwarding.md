@@ -680,7 +680,7 @@ done
 
 Port Forwarding expose services ra Internet, nhưng **security-conscious approach** là sử dụng **VPN tunnel** thay vì expose multiple ports. Đây là evolution tự nhiên cho production environments.
 
-### 🔒 Recommended Next Guide: [OpenVPN Server với OVPM](OVPM.md)
+### 🔒 Recommended Next Guide: [OpenVPN Server với OVPM](VPN-Server-OpenVPN.md)
 
 **Why VPN is better than Port Forwarding:**
 
@@ -707,4 +707,4 @@ WOL → Auto VMs → Services → Secure VPN Access (single tunnel)
 - ✅ **Network Architecture**: VPN tunneling, routing, firewall integration
 - ✅ **Remote Development**: Secure access to entire home lab environment
 
-**Perfect progression**: Basic exposure → Secure access → Enterprise-grade remote infrastructure! 🔒
+**Perfect progression**: Basic exposure → Secure access → Enterprise-grade remote infrastructure! 🔒 
