@@ -142,33 +142,35 @@ esxcli system settings advanced list -o /Power/UsePStates
 
 **Lưu ý:** Cấu hình này sẽ tăng mức tiêu thụ điện nhưng đảm bảo WOL hoạt động ổn định 100%.
 
-## 💡 Shutdown vs Standby - Hiểu đúng khái niệm
 
-### **Shutdown (Tắt nguồn hoàn toàn):**
+### Bước 4: Tạo script shutdown (standby) tiện lợi
+
+**Mục đích**: Tạo script để gracefully shutdown ESXi và chuẩn bị cho Wake On LAN
+
+
+### Shutdown vs Standby - Hiểu đúng khái niệm
+
+#### **Shutdown (Tắt nguồn hoàn toàn):**
 - **Power state**: S5 (Soft Off)
 - **Đặc điểm**: Tắt hoàn toàn, chỉ giữ power tối thiểu cho network adapter
 - **WOL**: Có thể wake up nếu network adapter được cấp nguồn
 - **Tiêu thụ điện**: ~5-10W (chỉ PSU standby + network)
 - **Khởi động**: Chậm (full boot process)
 
-### **Standby (Chế độ ngủ):**
+#### **Standby (Chế độ ngủ):**
 - **Power state**: S3 (Suspend to RAM) 
 - **Đặc điểm**: RAM vẫn được cấp nguồn, CPU và storage ngủ
 - **WOL**: Wake up rất nhanh vì RAM còn data
 - **Tiêu thụ điện**: ~15-30W (RAM + essential components)
 - **Khởi động**: Nhanh (resume từ RAM)
 
-### **Lựa chọn nào cho ESXi?**
+#### **Lựa chọn nào cho ESXi?**
 **ESXi không hỗ trợ standby (S3) mode**, chỉ có:
 - **Running**: Hoạt động bình thường
 - **Maintenance Mode**: Chuẩn bị shutdown
 - **Shutdown**: Tắt hoàn toàn (S5)
 
 **→ "Standby" trong ESXi = Shutdown với WOL enabled**
-
-### Bước 4: Tạo script shutdown (standby) tiện lợi
-
-**Mục đích**: Tạo script để gracefully shutdown ESXi và chuẩn bị cho Wake On LAN
 
 #### 4.1 Tạo script shutdown:
 ```bash
