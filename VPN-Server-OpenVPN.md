@@ -2,624 +2,422 @@
 
 ## Giới thiệu
 
-OpenVPN Server với OVPM là **bước advanced level** trong home lab DevOps journey. Sau khi đã có Port Forwarding để expose services, VPN Server mang lại **enterprise-grade security** và **centralized access control** cho toàn bộ infrastructure.
+OpenVPN Server với OVPM là **bước advanced level** trong home lab DevOps journey. Sau khi đã có [Port Forwarding](Port-Forwarding.md) để expose services, VPN Server mang lại **enterprise-grade security** và **centralized access control** cho toàn bộ infrastructure.
 
 ### Tại sao OpenVPN quan trọng cho DevOps?
 
 **Enterprise Security**: PKI certificates, encryption, và authentication - standard trong production environments.
 
-**Remote Development**: Secure access tới entire home lab từ bất kỳ đâu.
+**Database Access**: Secure access tới database VMs từ bất kỳ đâu.
 
 **Zero Trust Architecture**: User-based authentication thay vì network-based access.
 
-**Audit & Compliance**: Complete logging và user tracking cho security requirements.
+**Centralized Management**: Web interface để quản lý users và configurations.
 
 ---
 
-## PHẦN A: TỔNG QUAN OVPM
+## Mục đích và cấu hình
 
-### A.1 OVPM là gì?
+Triển khai VPN Server riêng với các mục đích sau:
 
-**OVPM** (OpenVPN Management) là web-based interface để quản lý OpenVPN server một cách dễ dàng. Thay vì configure OpenVPN manually với command line, OVPM cung cấp:
+- **Truy cập mạng LAN từ xa**: Kết nối an toàn vào mạng nội bộ từ bất kỳ đâu
+- **Truy cập các VM Database**: Kết nối trực tiếp đến các máy ảo đang chạy database trong mạng LAN  
+- **Xuất file .ovpn**: Tạo file cấu hình VPN cho các devices
+- **Quản lý tập trung**: Sử dụng Web interface để quản lý users và cấu hình
 
-- **Web GUI**: Quản lý users, certificates, configurations
-- **REST API**: Automation và integration
-- **User Self-Service**: Users có thể download own configs
-- **Monitoring**: Connection logs, bandwidth usage
-- **PKI Management**: Automatic certificate generation và revocation
-
-### A.2 So sánh với Port Forwarding:
-
-| Aspect | Port Forwarding | OpenVPN Server |
-|--------|----------------|----------------|
-| **Security Model** | Router firewall rules | User-based authentication |
-| **Access Control** | IP/Port based | Certificate + credential based |
-| **Exposed Attack Surface** | Multiple ports | Single VPN port (1194) |
-| **User Management** | Manual router config | Centralized web interface |
-| **Audit Trail** | Router logs only | Complete user activity logs |
-| **Scalability** | Manual per-service | Centralized user management |
-| **Remote Development** | Limited to exposed services | Full network access |
+**Thông số server:**
+- IP Server: `192.168.1.210`
+- **Hostname VPN**: `vpn.yourdomain.com` (subdomain dành riêng cho VPN)
+- Port OpenVPN: `1197/UDP`
+- Port Web UI: `8080/TCP`
+- Mạng LAN: `192.168.1.0/24`
 
 ---
 
-## PHẦN B: INFRASTRUCTURE SETUP
+## Chuẩn bị
 
-### B.1 VM Preparation:
+Trước khi bắt đầu, đảm bảo bạn có:
 
-#### B.1.1 Tạo VM cho OpenVPN Server:
+1. **Hệ điều hành**: Ubuntu Server
+2. **Quyền truy cập**: root (sudo)
+3. **Phần mềm cần thiết**: `ufw`, `curl`, `systemd`, `iptables`
+4. **Server IP**: 192.168.1.210 (đã cấu hình static)
+5. **Domain và DNS**: Subdomain `vpn.yourdomain.com` đã trỏ về IP 192.168.1.210
+
+---
+
+## Bước 0: Cấu hình DNS cho VPN Subdomain
+
+### Cấu hình DNS Record
+
+Trước khi cài đặt OVPM, cần cấu hình DNS:
+
 ```bash
-# SSH vào ESXi
-ssh root@192.168.1.50
-
-# VM specifications:
-# - Name: ovpm-server
-# - OS: Ubuntu 22.04 LTS
-# - CPU: 2 cores
-# - RAM: 2GB
-# - Disk: 20GB
-# - Network: VM Network (same as other VMs)
+# Thêm một record vào NO-IP và đưa nó vào cấu hình của modem mạng:
+# Sau đó tạo một record CNAME
+# vpn.yourdomain.com -> 192.168.1.210
 ```
 
-#### B.1.2 VM Network Configuration:
-```bash
-# Đặt static IP cho VPN server
-# /etc/netplan/00-installer-config.yaml
-network:
-  version: 2
-  ethernets:
-    ens160:
-      dhcp4: false
-      addresses:
-        - 192.168.1.110/24
-      routes:
-        - to: default
-          via: 192.168.1.1
-      nameservers:
-        addresses: [8.8.8.8, 8.8.4.4]
-
-# Apply configuration
-netplan apply
-```
-
-### B.2 Docker Installation:
+### Kiểm tra DNS resolution
 
 ```bash
-# Update system
-apt update && apt upgrade -y
+# Test DNS từ server
+nslookup vpn.yourdomain.com
+dig vpn.yourdomain.com
 
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-
-# Start Docker service
-systemctl enable docker
-systemctl start docker
-
-# Verify installation
-docker --version
-docker-compose --version
+# Test từ máy khác
+ping vpn.yourdomain.com
 ```
 
 ---
 
-## PHẦN C: OVPM INSTALLATION & CONFIGURATION
+## Bước 1: Cài đặt OVPM
 
-### C.1 OVPM Docker Setup:
+### Thêm repository APT
 
-#### C.1.1 Tạo directory structure:
 ```bash
-mkdir -p /opt/ovpm
-cd /opt/ovpm
+# Tải và cài đặt OVPM
+curl -s https://raw.githubusercontent.com/cad/ovpm/master/scripts/install.sh | sudo bash
 
-# Create data directories
-mkdir -p data/db data/pki data/openvpn data/logs
+# Hoặc cài đặt manual:
+wget -O ovpm.deb https://github.com/cad/ovpm/releases/latest/download/ovpm_linux_amd64.deb
+sudo dpkg -i ovpm.deb
+
+# Start service
+sudo systemctl start ovpmd
+sudo systemctl enable ovpmd
 ```
 
-#### C.1.2 Docker Compose file:
-```yaml
-# /opt/ovpm/docker-compose.yml
-version: '3.8'
+### Kiểm tra service đã chạy
 
-services:
-  ovpm:
-    image: cad/ovpm:latest
-    container_name: ovpm
-    restart: unless-stopped
-    environment:
-      - OVPM_ADMIN_USERNAME=admin
-      - OVPM_ADMIN_PASSWORD=YourSecurePassword123!
-      - OVPM_DB_URL=sqlite:///data/ovpm.db
-      - OVPM_HOSTNAME=192.168.1.110
-      - OVPM_PORT=1194
-      - OVPM_PROTOCOL=udp
-      - OVPM_WEB_PORT=8080
-    ports:
-      - "1194:1194/udp"  # OpenVPN port
-      - "8080:8080/tcp"  # Web interface
-    volumes:
-      - ./data/db:/data
-      - ./data/pki:/etc/openvpn/pki
-      - ./data/openvpn:/etc/openvpn
-      - ./data/logs:/var/log/ovpm
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun
-    networks:
-      - ovpm-network
-
-networks:
-  ovpm-network:
-    driver: bridge
-```
-
-#### C.1.3 Start OVPM:
 ```bash
-cd /opt/ovpm
-
-# Pull image và start
-docker-compose pull
-docker-compose up -d
-
-# Check status
-docker-compose ps
-docker logs ovpm
-
-# Wait for initialization (2-3 minutes)
-sleep 180
-
-# Test web interface
-curl -I http://192.168.1.110:8080
-```
-
-### C.2 Initial Configuration:
-
-#### C.2.1 Web Interface Access:
-```
-URL: http://192.168.1.110:8080
-Username: admin
-Password: YourSecurePassword123!
-```
-
-#### C.2.2 First-time Setup:
-1. **Login** to OVPM web interface
-2. **Create Server Certificate**: 
-   - Server Name: `ovpm-homelab`
-   - Server IP: `192.168.1.110`
-   - VPN Network: `10.8.0.0/24`
-3. **Network Settings**:
-   - DNS Servers: `8.8.8.8, 8.8.4.4`
-   - Routes: `192.168.1.0/24` (để access home network)
-
----
-
-## PHẦN D: USER MANAGEMENT & CLIENT SETUP
-
-### D.1 User Creation:
-
-#### D.1.1 Via Web Interface:
-1. Navigate to **Users** section
-2. Click **Add User**
-3. Configure user:
-   ```
-   Username: homelab-admin
-   Password: UserSecurePass123!
-   Admin: Yes (for first user)
-   
-   Network Access:
-   - VPN Network: 10.8.0.0/24
-   - LAN Routes: 192.168.1.0/24
-   ```
-
-#### D.1.2 Via Command Line:
-```bash
-# Access OVPM container
-docker exec -it ovpm /bin/bash
-
-# Create user với CLI
-ovpm user create homelab-admin
-ovpm user set homelab-admin --password "UserSecurePass123!"
-ovpm user set homelab-admin --admin true
-
-# List users
-ovpm user list
-
-# Download user config
-ovpm user export homelab-admin > /tmp/homelab-admin.ovpn
-```
-
-### D.2 Client Configuration Download:
-
-#### D.2.1 Via Web Interface:
-1. Login to OVPM
-2. Go to **Users** → **homelab-admin**
-3. Click **Download Config**
-4. Save `homelab-admin.ovpn` file
-
-#### D.2.2 Via API:
-```bash
-# Get user config via API
-curl -u admin:YourSecurePassword123! \
-     http://192.168.1.110:8080/api/user/homelab-admin/config \
-     -o homelab-admin.ovpn
+sudo systemctl status ovpmd
+ovpm --help
 ```
 
 ---
 
-## PHẦN E: CLIENT SETUP & CONNECTION
+## Bước 2: Khởi tạo VPN Server với cấu hình
 
-### E.1 macOS Client:
+### Khởi tạo VPN Server với subdomain và port tùy chỉnh
 
-#### E.1.1 Install OpenVPN Connect:
 ```bash
-# Via Homebrew
-brew install --cask openvpn-connect
-
-# Hoặc download từ OpenVPN website
-# https://openvpn.net/client-connect-vpn-for-mac-os/
+sudo ovpm vpn init --hostname vpn.yourdomain.com --port 1197
 ```
 
-#### E.1.2 Import Configuration:
+Lệnh này sẽ thực hiện:
+- Tạo CA certificates
+- Tạo server certificates cho subdomain `vpn.yourdomain.com`
+- Khởi tạo OpenVPN server config với port 1197
+- Setup database
+- Cấu hình mạng cho truy cập LAN
+
+### Cấu hình mạng LAN và routing
+
 ```bash
-# Copy config file
-cp homelab-admin.ovpn ~/Downloads/
-
-# Import vào OpenVPN Connect:
-# 1. Open OpenVPN Connect
-# 2. Click "+" → "File"
-# 3. Select homelab-admin.ovpn
-# 4. Import
-```
-
-### E.2 iOS/iPhone Setup:
-
-1. **Install App**: OpenVPN Connect từ App Store
-2. **Transfer config**:
-   - Email `homelab-admin.ovpn` tới iPhone
-   - Hoặc AirDrop từ Mac
-3. **Import**: Open file → "Copy to OpenVPN"
-4. **Connect**: Tap profile → Connect
-
-### E.3 Windows Client:
-
-#### E.3.1 Install OpenVPN GUI:
-```bash
-# Download từ: https://openvpn.net/client-connect-vpn-for-windows/
-# Hoặc use Chocolatey:
-choco install openvpn
-```
-
-#### E.3.2 Import Configuration:
-1. Copy `homelab-admin.ovpn` to `C:\Program Files\OpenVPN\config\`
-2. Right-click OpenVPN GUI → "Import file"
-3. Select config → Import
-
-### E.4 Android Setup:
-
-1. **Install**: OpenVPN for Android từ Google Play
-2. **Import**: Share .ovpn file → Open with OpenVPN
-3. **Import Profile** → **Connect**
-
----
-
-## PHẦN F: ROUTER CONFIGURATION
-
-### F.1 Port Forwarding for VPN:
-
-#### F.1.1 Router Settings:
-```
-Service Name: OpenVPN-Server
-External Port: 1194
-Internal IP: 192.168.1.110
-Internal Port: 1194
-Protocol: UDP
-Enable: Yes
-```
-
-#### F.1.2 Firewall Rules:
-```bash
-# VM firewall (Ubuntu)
-ufw allow 1194/udp comment "OpenVPN"
-ufw allow 8080/tcp comment "OVPM Web"
-ufw allow from 192.168.1.0/24 to any port 22 comment "SSH from LAN"
-
-# Enable IP forwarding
-echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-sysctl -p
-```
-
-### F.2 Testing Connection:
-
-#### F.2.1 External Connectivity Test:
-```bash
-# From external network (mobile hotspot)
-nmap -sU -p 1194 YOUR_PUBLIC_IP
-
-# Should show: 1194/udp open
-```
-
-#### F.2.2 VPN Connection Test:
-```bash
-# After connecting VPN from external location
-ping 10.8.0.1          # VPN gateway
-ping 192.168.1.110      # VPN server
-ping 192.168.1.100      # Other home services
-
-# Test access to home services
-curl http://192.168.1.100:80     # Internal web server
-ssh root@192.168.1.50            # ESXi server
+# Cấu hình để VPN client có thể truy cập mạng LAN
+sudo ovpm vpn update --net "192.168.1.0/24" --dns "192.168.1.1,8.8.8.8"
 ```
 
 ---
 
-## PHẦN G: SECURITY CONFIGURATION
+## Bước 3: Kiểm tra VPN Server status
 
-### G.1 PKI Certificate Management:
-
-#### G.1.1 Certificate Authority Security:
 ```bash
-# Backup CA certificates
-docker exec ovpm tar -czf /tmp/ovpm-pki-backup.tar.gz /etc/openvpn/pki
-docker cp ovpm:/tmp/ovpm-pki-backup.tar.gz ./ovpm-pki-backup-$(date +%Y%m%d).tar.gz
-
-# Secure backup location
-chmod 600 ovpm-pki-backup-*.tar.gz
-```
-
-#### G.1.2 Certificate Revocation:
-```bash
-# Via Web Interface:
-# Users → Select User → Revoke Certificate
-
-# Via CLI:
-docker exec -it ovpm ovpm user revoke username
-
-# Generate new CRL
-docker exec ovpm ovpm pki crl-gen
-```
-
-### G.2 Access Control Lists:
-
-#### G.2.1 User-specific Routes:
-```bash
-# Different users có thể có different network access
-# Admin user: Full access
-ovpm user set admin-user --route "192.168.1.0/24,10.0.0.0/8"
-
-# Regular user: Limited access
-ovpm user set regular-user --route "192.168.1.100/32"  # Only web server
-
-# Developer: Development network access
-ovpm user set dev-user --route "192.168.1.0/24,172.16.0.0/16"
-```
-
-#### G.2.2 Time-based Access:
-```bash
-# OVPM có built-in time restrictions
-# User Settings → Access Hours
-# Ví dụ: 9:00-18:00, Monday-Friday
-```
-
-### G.3 Monitoring & Logging:
-
-#### G.3.1 Connection Monitoring:
-```bash
-# Real-time connections
-docker exec ovpm ovpm user list --connected
-
-# Connection logs
-docker logs ovpm | grep "CLIENT_CONNECT"
-docker logs ovpm | grep "CLIENT_DISCONNECT"
-
-# Bandwidth usage
-docker exec ovpm cat /var/log/ovpm/bandwidth.log
-```
-
-#### G.3.2 Security Logs:
-```bash
-# Failed authentication attempts
-docker logs ovpm | grep "AUTH_FAILED"
-
-# Certificate issues
-docker logs ovpm | grep "TLS_ERROR"
-
-# Export logs for analysis
-docker logs ovpm > ovpm-logs-$(date +%Y%m%d).log
+sudo ovpm vpn status
 ```
 
 ---
 
-## PHẦN H: ADVANCED AUTOMATION
+## Bước 4: Tạo user admin và users cho database access
 
-### H.1 Tích hợp với Infrastructure Automation:
+### Tạo user admin
 
-#### H.1.1 Enhanced Wake-Server Function:
-**Thêm vào `~/.zshrc`:**
 ```bash
-# Complete automation: WOL → VPN → Services
-wake-and-connect-vpn() {
-    echo "[INFO] Starting complete home lab connection..."
-    
-    # 1. Wake server
-    wake-server
-    
-    # 2. Wait for VPN server
-    echo "[INFO] Waiting for VPN server startup..."
-    sleep 90
-    
-    # 3. Test VPN server accessibility
-    VPN_SERVER="YOUR_PUBLIC_IP"
-    if nc -uz $VPN_SERVER 1194; then
-        echo "[SUCCESS] VPN server accessible"
-        
-        # 4. Connect VPN (macOS)
-        osascript -e 'tell application "OpenVPN Connect" to connect "homelab-admin"'
-        echo "[INFO] VPN connection initiated"
-        
-        # 5. Wait for VPN connection
-        sleep 15
-        
-        # 6. Test internal services via VPN
-        if ping -c 2 192.168.1.100 > /dev/null 2>&1; then
-            echo "[SUCCESS] Home lab accessible via VPN!"
-            echo "[INFO] Available services:"
-            echo "  ESXi: https://192.168.1.50"
-            echo "  Web Server: http://192.168.1.100"
-            echo "  OVPM: http://192.168.1.110:8080"
-        else
-            echo "[WARNING] VPN connected but services not accessible"
-        fi
-    else
-        echo "[ERROR] VPN server not accessible"
-    fi
-}
-
-# Disconnect function
-disconnect-vpn() {
-    osascript -e 'tell application "OpenVPN Connect" to disconnect "homelab-admin"'
-    echo "[INFO] VPN disconnected"
-}
+sudo ovpm user create -u admin -p AdminPassword123! --admin
 ```
 
-#### H.1.2 User Management Automation:
+### Tạo user cho Database Admin
+
 ```bash
-#!/bin/bash
-# ovpm-user-manager.sh
-
-OVPM_HOST="192.168.1.110:8080"
-OVPM_USER="admin"
-OVPM_PASS="YourSecurePassword123!"
-
-# Function to create user
-create_vpn_user() {
-    local username=$1
-    local password=$2
-    local admin=${3:-false}
-    
-    echo "Creating VPN user: $username"
-    
-    # Create user via API
-    curl -u "$OVPM_USER:$OVPM_PASS" \
-         -X POST \
-         -H "Content-Type: application/json" \
-         -d "{
-             \"username\": \"$username\",
-             \"password\": \"$password\",
-             \"admin\": $admin
-         }" \
-         "http://$OVPM_HOST/api/user"
-    
-    # Download config
-    curl -u "$OVPM_USER:$OVPM_PASS" \
-         "http://$OVPM_HOST/api/user/$username/config" \
-         -o "${username}.ovpn"
-    
-    echo "Config file saved: ${username}.ovpn"
-}
-
-# Function to revoke user
-revoke_vpn_user() {
-    local username=$1
-    
-    echo "Revoking VPN user: $username"
-    
-    curl -u "$OVPM_USER:$OVPM_PASS" \
-         -X DELETE \
-         "http://$OVPM_HOST/api/user/$username"
-}
-
-# Usage examples:
-# create_vpn_user "john-doe" "SecurePass123!" false
-# revoke_vpn_user "john-doe"
+sudo ovpm user create -u dbadmin -p DbAdmin123!
 ```
 
-### H.2 Monitoring & Alerting:
+### Tạo user cho Developer
 
-#### H.2.1 VPN Health Check:
 ```bash
-#!/bin/bash
-# vpn-health-check.sh
-
-VPN_SERVER="192.168.1.110"
-PUBLIC_IP="YOUR_PUBLIC_IP"
-LOG_FILE="/var/log/vpn-health.log"
-
-# Check internal VPN server
-check_internal() {
-    if curl -s --connect-timeout 5 http://$VPN_SERVER:8080/health > /dev/null; then
-        echo "$(date): ✅ VPN internal health - OK" >> $LOG_FILE
-        return 0
-    else
-        echo "$(date): ❌ VPN internal health - FAILED" >> $LOG_FILE
-        return 1
-    fi
-}
-
-# Check external VPN port
-check_external() {
-    if nc -uz $PUBLIC_IP 1194 2>/dev/null; then
-        echo "$(date): ✅ VPN external port - OK" >> $LOG_FILE
-        return 0
-    else
-        echo "$(date): ❌ VPN external port - FAILED" >> $LOG_FILE
-        return 1
-    fi
-}
-
-# Check connected users
-check_users() {
-    local user_count=$(docker exec ovpm ovpm user list --connected | wc -l)
-    echo "$(date): 📊 Connected users: $user_count" >> $LOG_FILE
-}
-
-# Main health check
-main() {
-    echo "$(date): Starting VPN health check" >> $LOG_FILE
-    
-    check_internal
-    check_external
-    check_users
-    
-    echo "$(date): Health check completed" >> $LOG_FILE
-}
-
-# Run health check
-main
+sudo ovpm user create -u developer -p Dev123!
 ```
 
-#### H.2.2 Certificate Expiry Monitoring:
+### Liệt kê danh sách users đã tạo
+
 ```bash
-#!/bin/bash
-# cert-expiry-check.sh
+sudo ovpm user list
+```
 
-WARN_DAYS=30
-CRIT_DAYS=7
+---
 
-# Check server certificate
-check_server_cert() {
-    local cert_file="/opt/ovpm/data/pki/issued/server.crt"
-    
-    if [ -f "$cert_file" ]; then
-        local expiry_date=$(openssl x509 -enddate -noout -in "$cert_file" | cut -d= -f2)
-        local expiry_epoch=$(date -d "$expiry_date" +%s)
-        local current_epoch=$(date +%s)
-        local days_until_expiry=$(( (expiry_epoch - current_epoch) / 86400 ))
-        
-        if [ $days_until_expiry -lt $CRIT_DAYS ]; then
-            echo "🚨 CRITICAL: Server certificate expires in $days_until_expiry days!"
-        elif [ $days_until_expiry -lt $WARN_DAYS ]; then
-            echo "⚠️  WARNING: Server certificate expires in $days_until_expiry days"
-        else
-            echo "✅ Server certificate valid for $days_until_expiry days"
-        fi
-    fi
-}
+## Bước 5: Tạo file .ovpn cho client
 
-check_server_cert
+### Tạo file .ovpn cho database admin
+
+```bash
+sudo ovpm user genconfig -u dbadmin -o /home/$(whoami)/vpn-configs/
+```
+
+### Tạo file .ovpn cho developer
+
+```bash
+sudo ovpm user genconfig -u developer -o /home/$(whoami)/vpn-configs/
+```
+
+### Tạo thư mục và kiểm tra file
+
+```bash
+mkdir -p /home/$(whoami)/vpn-configs/
+ls -la /home/$(whoami)/vpn-configs/*.ovpn
+```
+
+---
+
+## Bước 6: Cấu hình Firewall & Network cho truy cập LAN
+
+### Cấu hình UFW cho VPN và Web UI
+
+```bash
+# Mở port OpenVPN tùy chỉnh
+sudo ufw allow 1197/udp comment "OpenVPN Server"
+
+# Mở port Web UI
+sudo ufw allow 8080/tcp comment "OVPM Web Interface"
+
+# Cho phép traffic giữa VPN và LAN
+sudo ufw allow from 10.8.0.0/24 to 192.168.1.0/24
+```
+
+### Enable IP Forwarding cho routing LAN
+
+```bash
+echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+### Cấu hình iptables cho NAT và routing
+
+```bash
+# Cấu hình NAT cho VPN clients truy cập LAN
+sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
+
+# Cho phép forward traffic
+sudo iptables -A FORWARD -s 10.8.0.0/24 -d 192.168.1.0/24 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.1.0/24 -d 10.8.0.0/24 -j ACCEPT
+
+# Lưu iptables rules
+sudo sh -c "iptables-save > /etc/iptables/rules.v4"
+```
+
+### Kiểm tra IP Forwarding
+
+```bash
+cat /proc/sys/net/ipv4/ip_forward
+```
+
+---
+
+## Bước 7: Kiểm tra OpenVPN server đã chạy
+
+```bash
+sudo ps aux | grep openvpn
+sudo netstat -tulpn | grep 1197
+sudo ss -tulpn | grep 1197
+```
+
+---
+
+## Bước 8: Cấu hình routes cho truy cập Database VMs
+
+### Thêm routes cho database subnets
+
+```bash
+# Nếu database VMs ở subnet khác
+sudo ovpm net add --name "database-subnet" --net "192.168.1.0/24" --via "192.168.1.1"
+
+# Kiểm tra routes
+sudo ovpm net list
+```
+
+### Cấu hình DNS cho resolve database hostnames
+
+```bash
+sudo ovpm vpn update --dns "192.168.1.1,8.8.8.8,8.8.4.4"
+```
+
+---
+
+## Bước 9: Setup Web UI cho quản lý
+
+### Kiểm tra Web UI đã chạy
+
+```bash
+sudo netstat -tulpn | grep 8080
+```
+
+### Truy cập Web UI
+
+```bash
+echo "Truy cập Web UI tại: http://vpn.yourdomain.com:8080"
+echo "Hoặc sử dụng IP: http://192.168.1.210:8080"
+echo "Username: admin"
+echo "Password: AdminPassword123!"
+```
+
+---
+
+## Bước 10: Test kết nối và truy cập Database
+
+### Test ping từ VPN client đến LAN
+
+```bash
+# Sau khi connect VPN, test từ client:
+# ping 192.168.1.1    # Gateway
+# ping 192.168.1.210  # VPN Server
+# ping 192.168.1.xxx  # Database VMs
+```
+
+### Test kết nối database ports
+
+```bash
+# Test MySQL/MariaDB
+# telnet 192.168.1.xxx 3306
+
+# Test PostgreSQL  
+# telnet 192.168.1.xxx 5432
+
+# Test MongoDB
+# telnet 192.168.1.xxx 27017
+```
+
+---
+
+## Bước 11: Monitor & Troubleshooting
+
+### Xem logs VPN connections
+
+```bash
+sudo journalctl -u ovpmd -n 50
+sudo tail -f /var/log/openvpn/server.log
+```
+
+### Monitor active connections
+
+```bash
+sudo ovpm user list
+sudo ovpm vpn status
+```
+
+### Kiểm tra routing table
+
+```bash
+route -n
+ip route show
+```
+
+---
+
+## Bước 12: Các lệnh quản lý thường dùng
+
+### Quản lý users
+
+```bash
+# Xem chi tiết user
+sudo ovpm user show -u dbadmin
+
+# Xóa user
+sudo ovpm user delete -u username
+
+# Thay đổi password
+sudo ovpm user update -u dbadmin -p NewPassword123!
+```
+
+### Restart services
+
+```bash
+sudo ovpm vpn restart
+sudo systemctl restart ovpmd
+```
+
+### Backup cấu hình
+
+```bash
+sudo cp /var/lib/ovpm/ovpm.db /backup/ovpm-$(date +%Y%m%d).db
+sudo tar -czf /backup/ovpn-configs-$(date +%Y%m%d).tar.gz /home/$(whoami)/vpn-configs/
+```
+
+---
+
+## Troubleshooting các vấn đề thường gặp
+
+### 1. Không connect được VPN trên port 1197
+
+```bash
+sudo ufw status numbered
+sudo netstat -tulpn | grep 1197
+sudo journalctl -u ovpmd --no-pager -l
+```
+
+### 2. Connect được VPN nhưng không ping được LAN
+
+```bash
+# Kiểm tra IP forwarding
+cat /proc/sys/net/ipv4/ip_forward
+
+# Kiểm tra iptables rules
+sudo iptables -L -v -n
+sudo iptables -t nat -L -v -n
+```
+
+### 3. Không truy cập được database từ VPN
+
+```bash
+# Kiểm tra routes
+ip route show table main
+sudo ovpm net list
+
+# Test từ VPN server
+ping 192.168.1.xxx
+telnet 192.168.1.xxx 3306
+```
+
+### 4. Web UI không accessible trên port 8080
+
+```bash
+sudo ufw status | grep 8080
+sudo netstat -tulpn | grep 8080
+curl -I http://vpn.yourdomain.com:8080
+curl -I http://192.168.1.210:8080
+```
+
+---
+
+## File .ovpn cho Database Access
+
+Sau khi tạo user và export config, file .ovpn có dạng:
+
+```
+client
+dev tun
+proto udp
+remote vpn.yourdomain.com 1197
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+ca [inline]
+cert [inline]
+key [inline]
+verb 3
+# Routes để truy cập LAN
+route 192.168.1.0 255.255.255.0
 ```
 
 ---
@@ -629,35 +427,62 @@ check_server_cert
 ### ✅ DevOps Learning Outcomes:
 
 **Enterprise Security**: PKI infrastructure, certificate management, authentication  
-**Network Architecture**: VPN tunneling, routing, network segmentation  
+**Database Access**: Secure remote database connectivity  
+**Network Architecture**: VPN tunneling, routing, LAN access  
 **User Management**: RBAC, access control, audit trails  
-**Infrastructure as Code**: API automation, configuration management  
-**Monitoring & Observability**: Health checks, logging, alerting  
-**Production Operations**: Backup, disaster recovery, security hardening  
+**Infrastructure Management**: OVPM administration, monitoring  
 
 ### 📋 Production-Ready Checklist:
 
-- [ ] **PKI Security**: CA certificates backed up securely
-- [ ] **User Management**: Clear RBAC policies, regular access reviews
-- [ ] **Network Security**: Firewall rules, network segmentation
-- [ ] **Monitoring**: Health checks, log aggregation, alerting
-- [ ] **Backup**: Regular config and certificate backups
-- [ ] **Documentation**: Network topology, user guides, procedures
-- [ ] **Incident Response**: Revocation procedures, emergency access
-- [ ] **Compliance**: Log retention, access audit trails
+- [ ] **DNS Setup**: Subdomain `vpn.yourdomain.com` configured
+- [ ] **Firewall**: UFW rules for ports 1197/UDP and 8080/TCP
+- [ ] **IP Forwarding**: Enabled for LAN routing
+- [ ] **Database Access**: Tested connectivity to all database VMs
+- [ ] **User Management**: Admin and database users created
+- [ ] **Monitoring**: Logs và connection monitoring setup
+- [ ] **Backup**: Database và config files backed up
 
 ### 🔒 Security Best Practices:
 
 ```bash
 # Recommended network architecture:
 # Public Internet
-#     ↓ (Port 1194/UDP only)
+#     ↓ (Port 1197/UDP only)
 # Router with VPN port forwarding
 #     ↓
-# VPN Server (192.168.1.110)
+# VPN Server (192.168.1.210)
 #     ↓ (Encrypted tunnel)
-# All internal services (192.168.1.x)
+# Database VMs (192.168.1.x)
 ```
+
+---
+
+## Kết quả triển khai
+
+Hoàn tất việc triển khai OpenVPN Server với OVPM cho mục đích truy cập mạng LAN và Database VMs! 
+
+**Những gì đã đạt được:**
+- ✅ VPN Server chạy trên IP `192.168.1.210` port `1197/UDP`
+- ✅ Web UI quản lý trên port `8080/TCP`
+- ✅ Có thể truy cập mạng LAN `192.168.1.0/24` từ VPN clients
+- ✅ File `.ovpn` để cấu hình clients
+- ✅ Routing cho truy cập Database VMs
+- ✅ Firewall và security đã được cấu hình
+- ✅ Monitoring và troubleshooting tools
+
+**Các bước tiếp theo:**
+1. Download file `.ovpn` từ `/home/$(whoami)/vpn-configs/`
+2. Import vào OpenVPN client (Windows/Mac/Mobile)
+3. Connect và test truy cập database VMs
+4. Sử dụng Web UI tại `http://vpn.yourdomain.com:8080` để quản lý
+
+VPN server đã hoạt động hoàn hảo cho Database Infrastructure!
+
+---
+
+## 🔗 Integration với Complete DevOps Workflow
+
+OpenVPN Server hoàn thiện **secure remote access** cho home lab infrastructure. Đây là evolution từ basic network exposure sang enterprise-grade security.
 
 ### 🚀 Complete Automation Journey:
 
@@ -671,39 +496,21 @@ check_server_cert
 - ✅ [Port Forwarding](Port-Forwarding.md) - Basic service exposure
 
 **Level 4: Enterprise Security** (Current)
-- ✅ **OpenVPN Server** - Secure remote access
+- ✅ **OpenVPN Server** - Secure database và LAN access
 
 **Level 5: Container Orchestration** (Next)
 - 🎯 **Kubernetes/Docker Swarm** - Modern deployment patterns
 
----
+### 🔒 Security Evolution:
 
-## 🔗 Next Steps: Modern Infrastructure
-
-VPN Server mang lại **enterprise-grade security** cho home lab. Bước tiếp theo trong DevOps evolution là **containerization và orchestration** cho modern deployment patterns.
-
-### 🎯 Recommended Next Learning:
-
-#### **Container Orchestration với Kubernetes**
-**Current state**: 
+**📋 Previous approach**: 
 ```
-WOL → Auto VMs → Services → Secure VPN Access
+WOL → Auto VMs → Services → Multiple Port Forwarding
 ```
 
-**Next level**: 
+**🎯 Current secure approach**: 
 ```
-WOL → Auto VMs → Container Orchestration → Secure DevOps Platform
+WOL → Auto VMs → Services → Single VPN Tunnel → Complete LAN Access
 ```
 
-**What you'll learn**:
-- ✅ **Kubernetes Fundamentals**: Pods, Services, Deployments
-- ✅ **GitOps Workflows**: Infrastructure as Code, CI/CD pipelines  
-- ✅ **Service Mesh**: Advanced networking, observability, security
-- ✅ **Cloud-Native Patterns**: Microservices, scaling, resilience
-
-#### **Alternative Path: Infrastructure as Code**
-- **Terraform**: Infrastructure provisioning và management
-- **Ansible**: Configuration management và automation
-- **GitLab CI/CD**: Complete DevOps platform integration
-
-**Perfect progression**: Manual infrastructure → Secure access → Automated infrastructure → Cloud-native DevOps! 🚀 
+**Perfect progression**: Hardware automation → Application automation → Network exposure → Secure access → Enterprise infrastructure! 🚀 
