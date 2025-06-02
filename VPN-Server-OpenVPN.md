@@ -479,6 +479,135 @@ tail -f /var/db/ovpm/openvpn-status.log
 - Backup phải được mã hóa và lưu trữ an toàn
 - Thư mục `/var/db/ovpm/` chỉ có root mới được truy cập
 
+### ⚠️ Quan trọng: Sửa đổi cấu hình OpenVPN
+
+**🚨 CẢNH BÁO**: File `server.conf` được **tự động generate** bởi OVPM!
+
+```bash
+# ❌ KHÔNG LÀM NHƯ VẦY (sẽ bị mất khi restart)
+sudo nano /var/db/ovpm/server.conf
+sudo ovpm vpn restart  # <- File sẽ về mặc định!
+```
+
+#### ✅ Cách đúng để sửa cấu hình OVPM:
+
+**Phương pháp 1: Sử dụng OVPM commands**
+```bash
+# Xem cấu hình hiện tại
+sudo ovpm vpn status
+
+# Sửa cấu hình qua OVPM (recommended)
+sudo ovpm vpn update --net "192.168.1.0/24" --dns "192.168.1.1,8.8.8.8"
+sudo ovpm vpn update --port 1197
+sudo ovpm vpn update --hostname vpn.yourdomain.com
+
+# Thêm custom routes
+sudo ovpm net add --name "lan-access" --net "192.168.1.0/24" --via "192.168.1.1"
+```
+
+**Phương pháp 2: Backup và modify sau khi restart**
+```bash
+# 1. Backup cấu hình gốc
+sudo cp /var/db/ovpm/server.conf /var/db/ovpm/server.conf.backup
+
+# 2. Sửa file
+sudo nano /var/db/ovpm/server.conf
+
+# 3. Restart OpenVPN (KHÔNG dùng ovpm restart)
+sudo systemctl restart openvpn@server
+# HOẶC
+sudo pkill -HUP openvpn
+```
+
+**Phương pháp 3: Custom config override**
+```bash
+# Tạo file custom config
+sudo nano /var/db/ovpm/server-custom.conf
+
+# Thêm các dòng custom vào cuối file server.conf
+echo "# Custom configurations" | sudo tee -a /var/db/ovpm/server.conf
+echo "push \"route 192.168.2.0 255.255.255.0\"" | sudo tee -a /var/db/ovpm/server.conf
+echo "client-to-client" | sudo tee -a /var/db/ovpm/server.conf
+
+# Restart chỉ OpenVPN service
+sudo systemctl restart openvpn@server
+```
+
+#### 🔍 Kiểm tra thay đổi có hiệu lực
+
+```bash
+# Xem cấu hình đang chạy
+sudo cat /var/db/ovpm/server.conf | tail -20
+
+# Kiểm tra OpenVPN process
+sudo ps aux | grep openvpn
+
+# Xem logs để confirm changes
+sudo tail -f /var/db/ovpm/openvpn.log
+```
+
+#### 📝 Các thay đổi phổ biến
+
+**Thêm custom routes:**
+```bash
+# Thêm vào cuối server.conf
+push "route 192.168.2.0 255.255.255.0"
+push "route 10.0.0.0 255.0.0.0"
+```
+
+**Cho phép client-to-client communication:**
+```bash
+# Thêm vào server.conf
+client-to-client
+```
+
+**Thay đổi DNS servers:**
+```bash
+# Thay vì sửa trực tiếp, dùng ovpm command
+sudo ovpm vpn update --dns "192.168.1.1,1.1.1.1,8.8.8.8"
+```
+
+**Custom logging:**
+```bash
+# Thêm vào server.conf
+verb 4
+log-append /var/db/ovpm/openvpn-custom.log
+```
+
+#### 🔄 Script tự động apply custom config
+
+Tạo script để tự động apply custom config sau mỗi lần OVPM restart:
+
+```bash
+# Tạo script
+sudo nano /usr/local/bin/ovpm-apply-custom.sh
+
+#!/bin/bash
+# Apply custom OpenVPN configurations
+
+CUSTOM_CONFIG="/var/db/ovpm/custom-additions.conf"
+SERVER_CONFIG="/var/db/ovpm/server.conf"
+
+if [ -f "$CUSTOM_CONFIG" ]; then
+    echo "# Custom configurations added by script" >> "$SERVER_CONFIG"
+    cat "$CUSTOM_CONFIG" >> "$SERVER_CONFIG"
+    echo "Custom config applied to server.conf"
+    systemctl restart openvpn@server
+else
+    echo "No custom config found at $CUSTOM_CONFIG"
+fi
+
+# Cho quyền thực thi
+sudo chmod +x /usr/local/bin/ovpm-apply-custom.sh
+
+# Tạo file custom config
+sudo nano /var/db/ovpm/custom-additions.conf
+# Thêm các custom settings vào file này
+
+# Chạy script sau mỗi lần ovpm restart
+sudo /usr/local/bin/ovpm-apply-custom.sh
+```
+
 ---
 
 ## File .ovpn cho Database Access
