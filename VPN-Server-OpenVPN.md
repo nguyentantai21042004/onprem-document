@@ -399,6 +399,88 @@ curl -I http://192.168.1.210:8080
 
 ---
 
+## File cấu hình và dữ liệu OVPM
+
+### Vị trí lưu trữ cấu hình
+
+Tất cả file cấu hình, certificates và dữ liệu của OVPM được lưu trữ tại:
+
+```bash
+# Thư mục chính của OVPM
+/var/db/ovpm/
+
+# Xem danh sách files
+ls -la /var/db/ovpm/
+```
+
+### Cấu trúc files quan trọng
+
+```bash
+/var/db/ovpm/
+├── ca.crt                    # Certificate Authority (CA) certificate
+├── ca.key                    # CA private key (bảo mật cao)
+├── ccd/                      # Client Configuration Directory
+├── crl.pem                   # Certificate Revocation List
+├── db.sqlite3                # Database lưu trữ users và cấu hình
+├── dh4096.pem               # Diffie-Hellman parameters
+├── ipp.txt                   # IP pool assignments
+├── openvpn.log              # OpenVPN server logs
+├── openvpn-status.log       # Real-time connection status
+├── server.conf              # OpenVPN server configuration
+├── server.crt               # Server certificate
+└── server.key               # Server private key (bảo mật cao)
+```
+
+### Ý nghĩa từng file
+
+| File | Mô tả | Bảo mật |
+|------|-------|---------|
+| `ca.crt` | Root certificate để validate tất cả certificates | Public |
+| `ca.key` | Private key của CA, dùng để ký certificates | **Cực kỳ quan trọng** |
+| `db.sqlite3` | Database chứa users, passwords, configs | Quan trọng |
+| `server.conf` | Cấu hình OpenVPN server chi tiết | Quan trọng |
+| `server.crt/key` | Certificate và private key của server | **Cực kỳ quan trọng** |
+| `openvpn.log` | Logs kết nối và hoạt động | Monitor |
+| `openvpn-status.log` | Trạng thái real-time các kết nối | Monitor |
+
+### Backup quan trọng
+
+```bash
+# Tạo backup toàn bộ cấu hình OVPM
+sudo tar -czf /backup/ovpm-config-$(date +%Y%m%d).tar.gz /var/db/ovpm/
+
+# Backup riêng database users
+sudo cp /var/db/ovpm/db.sqlite3 /backup/ovpm-users-$(date +%Y%m%d).db
+
+# Backup certificates (rất quan trọng)
+sudo mkdir -p /backup/ovpm-certs-$(date +%Y%m%d)
+sudo cp /var/db/ovpm/{ca.crt,ca.key,server.crt,server.key,dh4096.pem} /backup/ovpm-certs-$(date +%Y%m%d)/
+```
+
+### Kiểm tra trạng thái files
+
+```bash
+# Xem quyền truy cập files
+ls -la /var/db/ovpm/
+
+# Kiểm tra kích thước database
+du -sh /var/db/ovpm/db.sqlite3
+
+# Xem logs mới nhất
+tail -f /var/db/ovpm/openvpn.log
+tail -f /var/db/ovpm/openvpn-status.log
+```
+
+### Security Notes
+
+⚠️ **Cảnh báo bảo mật:**
+- File `ca.key` và `server.key` chứa private keys - **KHÔNG BAO GIỜ** share hoặc copy ra ngoài
+- Database `db.sqlite3` chứa thông tin users - cần bảo vệ
+- Backup phải được mã hóa và lưu trữ an toàn
+- Thư mục `/var/db/ovpm/` chỉ có root mới được truy cập
+
+---
+
 ## File .ovpn cho Database Access
 
 Sau khi tạo user và export config, file .ovpn có dạng:

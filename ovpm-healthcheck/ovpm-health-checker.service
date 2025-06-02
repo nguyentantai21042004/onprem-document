@@ -18,8 +18,8 @@ RestartSec=30
 StartLimitInterval=300
 StartLimitBurst=5
 
-# Watchdog settings
-WatchdogSec=300
+# Watchdog settings - DISABLED to prevent 5-minute restarts
+# WatchdogSec=300
 NotifyAccess=none
 
 # Resource limits and monitoring
