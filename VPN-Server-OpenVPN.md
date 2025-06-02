@@ -1,620 +1,315 @@
-# OpenVPN Server với OVPM
+# OpenVPN Server với OVPM - Hướng Dẫn Chi Tiết
 
-## Giới thiệu
+## 🎯 Giới thiệu OVPM
 
-OpenVPN Server với OVPM là **bước advanced level** trong home lab DevOps journey. Sau khi đã có [Port Forwarding](Port-Forwarding.md) để expose services, VPN Server mang lại **enterprise-grade security** và **centralized access control** cho toàn bộ infrastructure.
+**OVPM (OpenVPN Management Server)** là công cụ quản lý OpenVPN server hiện đại với giao diện web và command line. OVPM giúp triển khai và quản lý VPN server một cách dễ dàng, phù hợp cho môi trường DevOps home lab.
 
-### Tại sao OpenVPN quan trọng cho DevOps?
+### ✨ Tính năng chính của OVPM
 
-**Bảo mật doanh nghiệp**: PKI certificates, mã hóa, và xác thực - tiêu chuẩn trong môi trường production.
+- 🖥️ **Command Line Interface (CLI)** - Quản lý hoàn toàn qua terminal
+- 🌐 **Web User Interface** - Giao diện web trực quan trên port 8080
+- 👥 **User Management** - Tạo, xóa, cập nhật VPN users với quyền admin
+- 🌍 **Network Management** - Quản lý mạng và routing cho VPN
+- 📁 **Client Profile Generation** - Tự động tạo file .ovpn cho clients
+- 🔄 **Import/Export/Backup** - Sao lưu và khôi phục cấu hình
+- 📊 **API Support** - REST và gRPC APIs cho automation
+- 📈 **Monitoring & Quota** - Giám sát và giới hạn băng thông (upcoming)
 
-**Truy cập cơ sở dữ liệu**: Truy cập an toàn tới database VMs từ bất kỳ đâu.
+### 🏗️ Kiến trúc OVPM
 
-**Kiến trúc Zero Trust**: Xác thực dựa trên người dùng thay vì truy cập dựa trên mạng.
-
-**Quản lý tập trung**: Giao diện web để quản lý người dùng và cấu hình.
-
----
-
-## Mục đích và cấu hình
-
-Triển khai VPN Server riêng với các mục đích sau:
-
-- **Truy cập mạng LAN từ xa**: Kết nối an toàn vào mạng nội bộ từ bất kỳ đâu
-- **Truy cập các VM Database**: Kết nối trực tiếp đến các máy ảo đang chạy database trong mạng LAN  
-- **Xuất file .ovpn**: Tạo file cấu hình VPN cho các thiết bị
-- **Quản lý tập trung**: Sử dụng giao diện Web để quản lý người dùng và cấu hình
-
-**Thông số server:**
-- IP Server: `192.168.1.210`
-- **Hostname VPN**: `vpn.yourdomain.com` (subdomain dành riêng cho VPN)
-- Port OpenVPN: `1197/UDP`
-- Port Web UI: `8080/TCP`
-- Mạng LAN: `192.168.1.0/24`
-
----
-
-## Chuẩn bị
-
-Trước khi bắt đầu, đảm bảo bạn có:
-
-1. **Hệ điều hành**: Ubuntu Server
-2. **Quyền truy cập**: root (sudo)
-3. **Phần mềm cần thiết**: `ufw`, `curl`, `systemd`, `iptables`
-4. **Server IP**: 192.168.1.210 (đã cấu hình static)
-5. **Domain và DNS**: Subdomain `vpn.yourdomain.com` đã trỏ về IP 192.168.1.210
-
----
-
-## Bước 0: Cấu hình DNS cho VPN Subdomain
-
-### Cấu hình DNS Record
-
-Trước khi cài đặt OVPM, cần cấu hình DNS:
-
-```bash
-# Thêm một record vào NO-IP và đưa nó vào cấu hình của modem mạng:
-# Sau đó tạo một record CNAME
-# vpn.yourdomain.com -> 192.168.1.210
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   OVPM CLI      │    │  OVPM Web UI    │    │   OpenVPN       │
+│  (ovpm command) │    │  (Port 8080)    │    │  (Port 1197)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   OVPMD Daemon  │
+                    │  (Management)   │
+                    └─────────────────┘
 ```
 
-### Kiểm tra DNS resolution
+### 🎯 Tại sao chọn OVPM cho DevOps?
 
-```bash
-# Test DNS từ server
-nslookup vpn.yourdomain.com
-dig vpn.yourdomain.com
+**🚀 Triển khai nhanh**: Setup VPN server trong vài phút thay vì hàng giờ cấu hình manual
 
-# Test từ máy khác
-ping vpn.yourdomain.com
-```
+**🎮 Quản lý dễ dàng**: Web interface + CLI cho mọi tác vụ quản lý
+
+**🔐 Bảo mật enterprise**: PKI certificates, user authentication, network isolation
+
+**📱 Multi-platform**: Tạo .ovpn profiles cho Windows, macOS, iOS, Android
+
+**🔧 DevOps-friendly**: APIs để tích hợp vào automation workflows
 
 ---
 
-## Bước 1: Cài đặt OVPM
+## 📋 Yêu cầu hệ thống
 
-### Thêm repository APT
+### Phần cứng tối thiểu:
+- **CPU**: 1 core (2 cores khuyến nghị)
+- **RAM**: 512MB (1GB khuyến nghị) 
+- **Disk**: 1GB free space
+- **Network**: Static IP address
+
+### Phần mềm:
+- **OS**: Ubuntu 16.04+ / CentOS 7+ / Debian 9+
+- **OpenVPN**: Version 2.3.3 trở lên
+- **Dependencies**: iptables, systemd
+
+### Mạng:
+- **Server IP**: `192.168.1.210` (static)
+- **VPN Subnet**: `10.9.0.0/24` (default)
+- **LAN Access**: `192.168.1.0/24`
+- **Ports**: 1197/UDP (VPN), 8080/TCP (Web UI)
+
+---
+
+## 🚀 Cài đặt OVPM
+
+### Phương pháp 1: Cài đặt từ DEB Package (Ubuntu/Debian)
+
+**✅ Khuyến nghị cho Ubuntu 16.04+**
 
 ```bash
-# Add APT Repo
+# 1. Thêm OVPM Repository
 sudo sh -c 'echo "deb [trusted=yes] https://cad.github.io/ovpm/deb/ ovpm main" >> /etc/apt/sources.list'
+
+# 2. Cập nhật package list
 sudo apt update
 
-# Install OVPM
+# 3. Cài đặt OVPM
 sudo apt install ovpm
 
-# Enable and start ovpmd service
-systemctl start ovpmd
-systemctl enable ovpmd
+# 4. Enable và start OVPMD service
+sudo systemctl start ovpmd
+sudo systemctl enable ovpmd
+
+# 5. Kiểm tra service status
+sudo systemctl status ovpmd
 ```
 
-### Kiểm tra service đã chạy
+### Phương pháp 2: Cài đặt từ RPM Package (CentOS/Fedora)
 
 ```bash
+# 1. Cài đặt dependencies
+sudo yum install yum-utils epel-release -y
+
+# 2. Thêm OVPM Repository
+sudo yum-config-manager --add-repo https://cad.github.io/ovpm/rpm/ovpm.repo
+
+# 3. Cài đặt OVPM
+sudo yum install ovpm
+
+# 4. Enable và start service
+sudo systemctl start ovpmd
+sudo systemctl enable ovpmd
+```
+
+### Phương pháp 3: Cài đặt từ Source Code
+
+```bash
+# 1. Cài đặt Go (nếu chưa có)
+sudo apt install golang-go
+
+# 2. Install OVPM từ source
+go get -u github.com/cad/ovpm/...
+
+# 3. Tạo users và groups cần thiết
+sudo useradd nobody
+sudo groupadd nogroup
+
+# 4. Chạy OVPMD daemon
+sudo ovpmd
+```
+
+### ✅ Xác minh cài đặt thành công
+
+```bash
+# Kiểm tra OVPM version
+ovpm --version
+
+# Kiểm tra OVPMD service
 sudo systemctl status ovpmd
+
+# Test OVPM command
 ovpm --help
 ```
 
 ---
 
-## Bước 2: Khởi tạo VPN Server với cấu hình
+## ⚙️ Khởi tạo VPN Server
 
-### Khởi tạo VPN Server với subdomain và port tùy chỉnh
+### Bước 1: Initialize VPN Server
 
 ```bash
-sudo ovpm vpn init --hostname vpn.yourdomain.com --port 1197
+# Khởi tạo VPN server với hostname tùy chỉnh
+sudo ovpm vpn init --hostname vpn.yourdomain.com
+
+# Output mong đợi:
+# INFO[0004] ovpm server initialized
 ```
 
-Lệnh này sẽ thực hiện:
-- Tạo CA certificates
-- Tạo server certificates cho subdomain `vpn.yourdomain.com`
-- Khởi tạo OpenVPN server config với port 1197
-- Setup database
-- Cấu hình mạng cho truy cập LAN
+**Lệnh này sẽ:**
+- Tạo Certificate Authority (CA)
+- Generate server certificates
+- Khởi tạo OpenVPN configuration
+- Setup database để lưu users
+- Tạo default VPN network (10.9.0.0/24)
 
-### Cấu hình mạng LAN và routing
+### Bước 2: Cấu hình VPN Network và DNS
 
 ```bash
-# Cấu hình để VPN client có thể truy cập mạng LAN
-sudo ovpm vpn update --net "192.168.1.0/24" --dns "192.168.1.1,8.8.8.8"
+# Cấu hình để VPN clients truy cập LAN
+sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1,8.8.8.8"
+
+# Cập nhật port tùy chỉnh (nếu cần)
+sudo ovpm vpn update --port 1197 --hostname vpn.yourdomain.com
 ```
 
----
-
-## Bước 3: Kiểm tra VPN Server status
+### Bước 3: Kiểm tra VPN Server Status
 
 ```bash
+# Xem trạng thái VPN server
 sudo ovpm vpn status
 ```
 
+**Output sẽ hiển thị:**
+```
+VPN Server Status:
+Hostname: vpn.yourdomain.com
+Port: 1197/UDP  
+Network: 10.9.0.0/24
+DNS: 192.168.1.1, 8.8.8.8
+Status: Running
+```
+
 ---
 
-## Bước 4: Tạo user admin và users cho database access
+## 👥 Quản lý Users
 
-### Tạo user admin
+### Tạo VPN Users
 
+#### Tạo Admin User
 ```bash
+# Tạo user với quyền admin
 sudo ovpm user create -u admin -p AdminPassword123! --admin
+
+# Tạo user thông thường
+sudo ovpm user create -u joe -p verySecretPassword
 ```
 
-### Tạo user cho Database Admin
-
+#### Tạo Multiple Users cho Database Access
 ```bash
-sudo ovpm user create -u dbadmin -p DbAdmin123!
+# Database Administrator
+sudo ovpm user create -u dbadmin -p DbAdmin2024!
+
+# Developer
+sudo ovpm user create -u developer -p Dev2024!
+
+# QA Tester  
+sudo ovpm user create -u qatester -p QA2024!
 ```
 
-### Tạo user cho Developer
+### Liệt kê và xem thông tin Users
 
 ```bash
-sudo ovpm user create -u developer -p Dev123!
-```
-
-### Liệt kê danh sách users đã tạo
-
-```bash
+# Liệt kê tất cả users
 sudo ovpm user list
 ```
 
----
-
-## Bước 5: Tạo file .ovpn cho client
-
-### Tạo file .ovpn cho database admin
-
-```bash
-sudo ovpm user genconfig -u dbadmin -o /home/$(whoami)/vpn-configs/
+**Output:**
+```
++---+-----------+--------------+--------------------------------+-----------+---------+
+| # | USERNAME  |      IP      |           CREATED AT           | VALID CRT | PUSH GW |
++---+-----------+--------------+--------------------------------+-----------+---------+
+| 1 | admin     | 10.9.0.2/24  | Wed Oct  4 10:21:29 +0300 2024 | true      | true    |
+| 2 | dbadmin   | 10.9.0.3/24  | Wed Oct  4 10:22:15 +0300 2024 | true      | true    |
+| 3 | developer | 10.9.0.4/24  | Wed Oct  4 10:23:01 +0300 2024 | true      | true    |
++---+-----------+--------------+--------------------------------+-----------+---------+
 ```
 
-### Tạo file .ovpn cho developer
-
 ```bash
-sudo ovpm user genconfig -u developer -o /home/$(whoami)/vpn-configs/
-```
-
-### Tạo thư mục và kiểm tra file
-
-```bash
-mkdir -p /home/$(whoami)/vpn-configs/
-ls -la /home/$(whoami)/vpn-configs/*.ovpn
-```
-
----
-
-## Bước 6: Cấu hình Firewall & Network cho truy cập LAN
-
-### Cấu hình UFW cho VPN và Web UI
-
-```bash
-# Mở port OpenVPN tùy chỉnh
-sudo ufw allow 1197/udp comment "OpenVPN Server"
-
-# Mở port Web UI
-sudo ufw allow 8080/tcp comment "OVPM Web Interface"
-
-# Cho phép traffic giữa VPN và LAN
-sudo ufw allow from 10.8.0.0/24 to 192.168.1.0/24
-```
-
-### Enable IP Forwarding cho routing LAN
-
-```bash
-echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
-```
-
-### Cấu hình iptables cho NAT và routing
-
-```bash
-# Cấu hình NAT cho VPN clients truy cập LAN
-sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
-
-# Cho phép forward traffic
-sudo iptables -A FORWARD -s 10.8.0.0/24 -d 192.168.1.0/24 -j ACCEPT
-sudo iptables -A FORWARD -s 192.168.1.0/24 -d 10.8.0.0/24 -j ACCEPT
-
-# Lưu iptables rules
-sudo sh -c "iptables-save > /etc/iptables/rules.v4"
-```
-
-### Kiểm tra IP Forwarding
-
-```bash
-cat /proc/sys/net/ipv4/ip_forward
-```
-
----
-
-## Bước 7: Kiểm tra OpenVPN server đã chạy
-
-```bash
-sudo ps aux | grep openvpn
-sudo netstat -tulpn | grep 1197
-sudo ss -tulpn | grep 1197
-```
-
----
-
-## Bước 8: Cấu hình routes cho truy cập Database VMs
-
-### Thêm routes cho database subnets
-
-```bash
-# Nếu database VMs ở subnet khác
-sudo ovpm net add --name "database-subnet" --net "192.168.1.0/24" --via "192.168.1.1"
-
-# Kiểm tra routes
-sudo ovpm net list
-```
-
-### Cấu hình DNS cho resolve database hostnames
-
-```bash
-sudo ovpm vpn update --dns "192.168.1.1,8.8.8.8,8.8.4.4"
-```
-
----
-
-## Bước 9: Setup Web UI cho quản lý
-
-### Kiểm tra Web UI đã chạy
-
-```bash
-sudo netstat -tulpn | grep 8080
-```
-
-### Truy cập Web UI
-
-```bash
-echo "Truy cập Web UI tại: http://vpn.yourdomain.com:8080"
-echo "Hoặc sử dụng IP: http://192.168.1.210:8080"
-echo "Username: admin"
-echo "Password: AdminPassword123!"
-```
-
----
-
-## Bước 10: Test kết nối và truy cập Database
-
-### Test ping từ VPN client đến LAN
-
-```bash
-# Sau khi connect VPN, test từ client:
-# ping 192.168.1.1    # Gateway
-# ping 192.168.1.210  # VPN Server
-# ping 192.168.1.xxx  # Database VMs
-```
-
-### Test kết nối database ports
-
-```bash
-# Test MySQL/MariaDB
-# telnet 192.168.1.xxx 3306
-
-# Test PostgreSQL  
-# telnet 192.168.1.xxx 5432
-
-# Test MongoDB
-# telnet 192.168.1.xxx 27017
-```
-
----
-
-## Bước 11: Monitor & Troubleshooting
-
-### Xem logs VPN connections
-
-```bash
-sudo journalctl -u ovpmd -n 50
-sudo tail -f /var/log/openvpn/server.log
-```
-
-### Monitor active connections
-
-```bash
-sudo ovpm user list
-sudo ovpm vpn status
-```
-
-### Kiểm tra routing table
-
-```bash
-route -n
-ip route show
-```
-
----
-
-## Bước 12: Các lệnh quản lý thường dùng
-
-### Quản lý users
-
-```bash
-# Xem chi tiết user
+# Xem chi tiết một user
 sudo ovpm user show -u dbadmin
+```
 
-# Xóa user
+### Cập nhật User Settings
+
+#### Thay đổi Password
+```bash
+# Đổi password cho user
+sudo ovpm user update -u joe --password NewPassword2024!
+```
+
+#### Cấp/Thu hồi quyền Admin
+```bash
+# Cấp quyền admin
+sudo ovpm user update -u dbadmin --admin
+
+# Thu hồi quyền admin
+sudo ovpm user update -u dbadmin --no-admin
+```
+
+#### Cấu hình Static IP cho User
+```bash
+# Gán IP tĩnh cho user
+sudo ovpm user update -u dbadmin --static 10.9.0.50
+
+# Chuyển về dynamic IP
+sudo ovpm user update -u dbadmin --no-static
+```
+
+#### Cấu hình Gateway Routing
+```bash
+# Push VPN server làm default gateway (route all traffic)
+sudo ovpm user update -u developer --gw
+
+# Chỉ route traffic đến VPN network (không route internet)
+sudo ovpm user update -u developer --no-gw
+```
+
+### Xóa Users
+
+```bash
+# Xóa user (cẩn thận!)
 sudo ovpm user delete -u username
-
-# Thay đổi password
-sudo ovpm user update -u dbadmin -p NewPassword123!
-```
-
-### Restart services
-
-```bash
-sudo ovpm vpn restart
-sudo systemctl restart ovpmd
-```
-
-### Backup cấu hình
-
-```bash
-sudo cp /var/lib/ovpm/ovpm.db /backup/ovpm-$(date +%Y%m%d).db
-sudo tar -czf /backup/ovpn-configs-$(date +%Y%m%d).tar.gz /home/$(whoami)/vpn-configs/
 ```
 
 ---
 
-## Troubleshooting các vấn đề thường gặp
+## 📁 Tạo Client Profiles (.ovpn files)
 
-### 1. Không connect được VPN trên port 1197
-
-```bash
-sudo ufw status numbered
-sudo netstat -tulpn | grep 1197
-sudo journalctl -u ovpmd --no-pager -l
-```
-
-### 2. Connect được VPN nhưng không ping được LAN
+### Generate .ovpn files cho Users
 
 ```bash
-# Kiểm tra IP forwarding
-cat /proc/sys/net/ipv4/ip_forward
+# Tạo thư mục lưu trữ configs
+mkdir -p /home/$(whoami)/vpn-configs/
 
-# Kiểm tra iptables rules
-sudo iptables -L -v -n
-sudo iptables -t nat -L -v -n
+# Tạo .ovpn file cho database admin
+sudo ovpm user genconfig -u dbadmin -o /home/$(whoami)/vpn-configs/
+
+# Tạo .ovpn file cho developer
+sudo ovpm user genconfig -u developer -o /home/$(whoami)/vpn-configs/
+
+# Tạo cho tất cả users
+sudo ovpm user genconfig -u admin -o /home/$(whoami)/vpn-configs/
 ```
 
-### 3. Không truy cập được database từ VPN
+### Kiểm tra files đã tạo
 
 ```bash
-# Kiểm tra routes
-ip route show table main
-sudo ovpm net list
+# Liệt kê files .ovpn
+ls -la /home/$(whoami)/vpn-configs/*.ovpn
 
-# Test từ VPN server
-ping 192.168.1.xxx
-telnet 192.168.1.xxx 3306
+# Xem nội dung file .ovpn
+cat /home/$(whoami)/vpn-configs/dbadmin.ovpn
 ```
 
-### 4. Web UI không accessible trên port 8080
+### Cấu trúc file .ovpn mẫu
 
-```bash
-sudo ufw status | grep 8080
-sudo netstat -tulpn | grep 8080
-curl -I http://vpn.yourdomain.com:8080
-curl -I http://192.168.1.210:8080
-```
-
----
-
-## File cấu hình và dữ liệu OVPM
-
-### Vị trí lưu trữ cấu hình
-
-Tất cả file cấu hình, certificates và dữ liệu của OVPM được lưu trữ tại:
-
-```bash
-# Thư mục chính của OVPM
-/var/db/ovpm/
-
-# Xem danh sách files
-ls -la /var/db/ovpm/
-```
-
-### Cấu trúc files quan trọng
-
-```bash
-/var/db/ovpm/
-├── ca.crt                    # Certificate Authority (CA) certificate
-├── ca.key                    # CA private key (bảo mật cao)
-├── ccd/                      # Client Configuration Directory
-├── crl.pem                   # Certificate Revocation List
-├── db.sqlite3                # Database lưu trữ users và cấu hình
-├── dh4096.pem               # Diffie-Hellman parameters
-├── ipp.txt                   # IP pool assignments
-├── openvpn.log              # OpenVPN server logs
-├── openvpn-status.log       # Real-time connection status
-├── server.conf              # OpenVPN server configuration
-├── server.crt               # Server certificate
-└── server.key               # Server private key (bảo mật cao)
-```
-
-### Ý nghĩa từng file
-
-| File | Mô tả | Bảo mật |
-|------|-------|---------|
-| `ca.crt` | Root certificate để validate tất cả certificates | Public |
-| `ca.key` | Private key của CA, dùng để ký certificates | **Cực kỳ quan trọng** |
-| `db.sqlite3` | Database chứa users, passwords, configs | Quan trọng |
-| `server.conf` | Cấu hình OpenVPN server chi tiết | Quan trọng |
-| `server.crt/key` | Certificate và private key của server | **Cực kỳ quan trọng** |
-| `openvpn.log` | Logs kết nối và hoạt động | Monitor |
-| `openvpn-status.log` | Trạng thái real-time các kết nối | Monitor |
-
-### Backup quan trọng
-
-```bash
-# Tạo backup toàn bộ cấu hình OVPM
-sudo tar -czf /backup/ovpm-config-$(date +%Y%m%d).tar.gz /var/db/ovpm/
-
-# Backup riêng database users
-sudo cp /var/db/ovpm/db.sqlite3 /backup/ovpm-users-$(date +%Y%m%d).db
-
-# Backup certificates (rất quan trọng)
-sudo mkdir -p /backup/ovpm-certs-$(date +%Y%m%d)
-sudo cp /var/db/ovpm/{ca.crt,ca.key,server.crt,server.key,dh4096.pem} /backup/ovpm-certs-$(date +%Y%m%d)/
-```
-
-### Kiểm tra trạng thái files
-
-```bash
-# Xem quyền truy cập files
-ls -la /var/db/ovpm/
-
-# Kiểm tra kích thước database
-du -sh /var/db/ovpm/db.sqlite3
-
-# Xem logs mới nhất
-tail -f /var/db/ovpm/openvpn.log
-tail -f /var/db/ovpm/openvpn-status.log
-```
-
-### Security Notes
-
-⚠️ **Cảnh báo bảo mật:**
-- File `ca.key` và `server.key` chứa private keys - **KHÔNG BAO GIỜ** share hoặc copy ra ngoài
-- Database `db.sqlite3` chứa thông tin users - cần bảo vệ
-- Backup phải được mã hóa và lưu trữ an toàn
-- Thư mục `/var/db/ovpm/` chỉ có root mới được truy cập
-
-### ⚠️ Quan trọng: Sửa đổi cấu hình OpenVPN
-
-**🚨 CẢNH BÁO**: File `server.conf` được **tự động generate** bởi OVPM!
-
-```bash
-# ❌ KHÔNG LÀM NHƯ VẦY (sẽ bị mất khi restart)
-sudo nano /var/db/ovpm/server.conf
-sudo ovpm vpn restart  # <- File sẽ về mặc định!
-```
-
-#### ✅ Cách đúng để sửa cấu hình OVPM:
-
-**Phương pháp 1: Sử dụng OVPM commands**
-```bash
-# Xem cấu hình hiện tại
-sudo ovpm vpn status
-
-# Sửa cấu hình qua OVPM (recommended)
-sudo ovpm vpn update --net "192.168.1.0/24" --dns "192.168.1.1,8.8.8.8"
-sudo ovpm vpn update --port 1197
-sudo ovpm vpn update --hostname vpn.yourdomain.com
-
-# Thêm custom routes
-sudo ovpm net add --name "lan-access" --net "192.168.1.0/24" --via "192.168.1.1"
-```
-
-**Phương pháp 2: Backup và modify sau khi restart**
-```bash
-# 1. Backup cấu hình gốc
-sudo cp /var/db/ovpm/server.conf /var/db/ovpm/server.conf.backup
-
-# 2. Sửa file
-sudo nano /var/db/ovpm/server.conf
-
-# 3. Restart OpenVPN (KHÔNG dùng ovpm restart)
-sudo systemctl restart openvpn@server
-# HOẶC
-sudo pkill -HUP openvpn
-```
-
-**Phương pháp 3: Custom config override**
-```bash
-# Tạo file custom config
-sudo nano /var/db/ovpm/server-custom.conf
-
-# Thêm các dòng custom vào cuối file server.conf
-echo "# Custom configurations" | sudo tee -a /var/db/ovpm/server.conf
-echo "push \"route 192.168.2.0 255.255.255.0\"" | sudo tee -a /var/db/ovpm/server.conf
-echo "client-to-client" | sudo tee -a /var/db/ovpm/server.conf
-
-# Restart chỉ OpenVPN service
-sudo systemctl restart openvpn@server
-```
-
-#### 🔍 Kiểm tra thay đổi có hiệu lực
-
-```bash
-# Xem cấu hình đang chạy
-sudo cat /var/db/ovpm/server.conf | tail -20
-
-# Kiểm tra OpenVPN process
-sudo ps aux | grep openvpn
-
-# Xem logs để confirm changes
-sudo tail -f /var/db/ovpm/openvpn.log
-```
-
-#### 📝 Các thay đổi phổ biến
-
-**Thêm custom routes:**
-```bash
-# Thêm vào cuối server.conf
-push "route 192.168.2.0 255.255.255.0"
-push "route 10.0.0.0 255.0.0.0"
-```
-
-**Cho phép client-to-client communication:**
-```bash
-# Thêm vào server.conf
-client-to-client
-```
-
-**Thay đổi DNS servers:**
-```bash
-# Thay vì sửa trực tiếp, dùng ovpm command
-sudo ovpm vpn update --dns "192.168.1.1,1.1.1.1,8.8.8.8"
-```
-
-**Custom logging:**
-```bash
-# Thêm vào server.conf
-verb 4
-log-append /var/db/ovpm/openvpn-custom.log
-```
-
-#### 🔄 Script tự động apply custom config
-
-Tạo script để tự động apply custom config sau mỗi lần OVPM restart:
-
-```bash
-# Tạo script
-sudo nano /usr/local/bin/ovpm-apply-custom.sh
-
-#!/bin/bash
-# Apply custom OpenVPN configurations
-
-CUSTOM_CONFIG="/var/db/ovpm/custom-additions.conf"
-SERVER_CONFIG="/var/db/ovpm/server.conf"
-
-if [ -f "$CUSTOM_CONFIG" ]; then
-    echo "# Custom configurations added by script" >> "$SERVER_CONFIG"
-    cat "$CUSTOM_CONFIG" >> "$SERVER_CONFIG"
-    echo "Custom config applied to server.conf"
-    systemctl restart openvpn@server
-else
-    echo "No custom config found at $CUSTOM_CONFIG"
-fi
-
-# Cho quyền thực thi
-sudo chmod +x /usr/local/bin/ovpm-apply-custom.sh
-
-# Tạo file custom config
-sudo nano /var/db/ovpm/custom-additions.conf
-# Thêm các custom settings vào file này
-
-# Chạy script sau mỗi lần ovpm restart
-sudo /usr/local/bin/ovpm-apply-custom.sh
-```
-
----
-
-## File .ovpn cho Database Access
-
-Sau khi tạo user và export config, file .ovpn có dạng:
-
-```
+```ini
 client
 dev tun
 proto udp
@@ -624,11 +319,464 @@ nobind
 persist-key
 persist-tun
 ca [inline]
-cert [inline]
+cert [inline]  
 key [inline]
 verb 3
-# Routes để truy cập LAN
+
+# Routes để truy cập LAN (được tự động thêm)
 route 192.168.1.0 255.255.255.0
+
+# DNS settings
+dhcp-option DNS 192.168.1.1
+dhcp-option DNS 8.8.8.8
+```
+
+---
+
+## 🌐 Web Interface Management
+
+### Truy cập Web UI
+
+#### Phương pháp 1: Truy cập trực tiếp
+```bash
+# Mở firewall cho port 8080
+sudo ufw allow 8080/tcp comment "OVPM Web Interface"
+
+# Truy cập qua browser:
+# http://vpn.yourdomain.com:8080
+# hoặc http://192.168.1.210:8080
+```
+
+#### Phương pháp 2: SSH Port Forwarding (Bảo mật)
+```bash
+# Từ máy local, tạo SSH tunnel
+ssh user@192.168.1.210 -L 9000:127.0.0.1:8080
+
+# Sau đó truy cập: http://localhost:9000
+```
+
+### Authentication trong Web UI
+
+**🔐 Authorization Rules:**
+- **External IP access**: Yêu cầu login với user/password
+- **Loopback access (127.0.0.1)**: Bypass authentication (admin access)
+
+**🚀 First-time Access:**
+```bash
+# Nếu chưa có admin user, tạo qua CLI
+sudo ovpm user create -u webadmin -p WebAdmin2024! --admin
+
+# Hoặc dùng SSH port forwarding để bypass authentication
+ssh user@192.168.1.210 -L 9000:127.0.0.1:8080
+# Browser: http://localhost:9000
+```
+
+### Các tính năng trong Web UI
+
+**Dashboard:**
+- VPN server status và thống kê
+- Active connections real-time
+- System resources monitoring
+
+**User Management:**
+- Tạo/xóa/sửa users graphically
+- Download .ovpn files trực tiếp
+- User activity monitoring
+
+**Network Settings:**
+- VPN network configuration
+- Routes và DNS settings
+- Firewall rules
+
+**System Logs:**
+- Connection logs
+- Error troubleshooting
+- Audit trail
+
+---
+
+## 🔧 Network Configuration
+
+### Cấu hình mạng cho LAN Access
+
+#### Enable IP Forwarding
+```bash
+# Enable IP forwarding
+echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+# Kiểm tra
+cat /proc/sys/net/ipv4/ip_forward  # Phải là 1
+```
+
+#### Cấu hình Firewall Rules
+
+```bash
+# Mở ports cho VPN
+sudo ufw allow 1197/udp comment "OpenVPN Server"
+sudo ufw allow 8080/tcp comment "OVPM Web Interface"
+
+# Cho phép traffic giữa VPN và LAN
+sudo ufw allow from 10.9.0.0/24 to 192.168.1.0/24
+sudo ufw allow from 192.168.1.0/24 to 10.9.0.0/24
+```
+
+#### Setup NAT và Routing
+
+```bash
+# NAT cho VPN clients truy cập LAN
+sudo iptables -t nat -A POSTROUTING -s 10.9.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
+
+# Forward rules
+sudo iptables -A FORWARD -s 10.9.0.0/24 -d 192.168.1.0/24 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.1.0/24 -d 10.9.0.0/24 -j ACCEPT
+
+# Lưu iptables rules
+sudo sh -c "iptables-save > /etc/iptables/rules.v4"
+```
+
+### Network Management với OVPM
+
+#### Thêm Custom Routes
+```bash
+# Thêm route cho database subnet
+sudo ovpm net add --name "database-subnet" --net "192.168.1.0/24" --via "192.168.1.1"
+
+# Add additional routes
+sudo ovpm net add --name "server-subnet" --net "192.168.1.200/29" --via "192.168.1.1"
+
+# Liệt kê routes
+sudo ovpm net list
+```
+
+#### Cập nhật DNS Settings
+```bash
+# Update DNS servers cho VPN clients
+sudo ovpm vpn update --dns "192.168.1.1,8.8.8.8,8.8.4.4"
+```
+
+---
+
+## 🔍 Monitoring và Troubleshooting
+
+### Kiểm tra VPN Server Status
+
+```bash
+# OVPM server status
+sudo ovpm vpn status
+
+# OVPMD daemon status
+sudo systemctl status ovpmd
+
+# OpenVPN processes
+sudo ps aux | grep openvpn
+
+# Network ports listening
+sudo netstat -tulpn | grep -E "(1197|8080)"
+sudo ss -tulpn | grep -E "(1197|8080)"
+```
+
+### Xem Logs và Debug
+
+```bash
+# OVPMD daemon logs
+sudo journalctl -u ovpmd -n 50 -f
+
+# OpenVPN server logs
+sudo tail -f /var/log/openvpn/server.log
+
+# System logs
+sudo tail -f /var/log/syslog | grep ovpm
+```
+
+### Monitor Active Connections
+
+```bash
+# Xem connected users
+sudo ovpm user list
+
+# Chi tiết connections
+sudo cat /var/log/openvpn/openvpn-status.log
+
+# Real-time connection monitoring
+watch "sudo ovpm user list"
+```
+
+### Common Troubleshooting Commands
+
+```bash
+# Test DNS resolution
+nslookup vpn.yourdomain.com
+dig vpn.yourdomain.com
+
+# Test VPN port connectivity
+sudo netstat -tulpn | grep 1197
+sudo lsof -i :1197
+
+# Test routing
+ip route show
+route -n
+
+# Test iptables rules
+sudo iptables -L -v -n
+sudo iptables -t nat -L -v -n
+```
+
+---
+
+## 🛠️ Advanced Configuration
+
+### Custom OpenVPN Settings
+
+#### Cấu hình via OVPM commands:
+
+```bash
+# Update server settings
+sudo ovpm vpn update --port 1197 --proto udp
+sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1,8.8.8.8"
+
+# Enable/disable compression (deprecated trong newer versions)
+sudo ovpm vpn update --enable-use-lzo  # Not recommended
+```
+
+### Backup và Restore
+
+#### Backup OVPM Configuration
+```bash
+# Backup database và certificates
+sudo tar -czf /backup/ovpm-config-$(date +%Y%m%d).tar.gz /var/db/ovpm/
+
+# Backup individual components
+sudo cp /var/db/ovpm/db.sqlite3 /backup/ovpm-users-$(date +%Y%m%d).db
+sudo cp -r /var/db/ovpm/pki/ /backup/ovpm-pki-$(date +%Y%m%d)/
+```
+
+#### Export/Import Users
+```bash
+# Export tất cả user configs
+for user in $(sudo ovpm user list --json | jq -r '.[].username'); do
+    sudo ovpm user genconfig -u $user -o /backup/user-configs/
+done
+
+# Backup script
+cat > /home/$(whoami)/backup-ovpm.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/backup/ovpm-$(date +%Y%m%d)"
+mkdir -p $BACKUP_DIR
+
+# Backup database và config
+sudo cp -r /var/db/ovpm/ $BACKUP_DIR/
+sudo ovpm user list > $BACKUP_DIR/users-list.txt
+
+# Generate all user configs
+mkdir -p $BACKUP_DIR/user-configs
+for user in $(sudo ovpm user list --format json | jq -r '.[].username'); do
+    sudo ovpm user genconfig -u $user -o $BACKUP_DIR/user-configs/
+done
+
+echo "Backup completed: $BACKUP_DIR"
+EOF
+
+chmod +x /home/$(whoami)/backup-ovpm.sh
+```
+
+### Performance Tuning
+
+#### Optimize cho nhiều concurrent connections:
+
+```bash
+# Increase file descriptor limits
+echo "ovpm soft nofile 4096" | sudo tee -a /etc/security/limits.conf
+echo "ovpm hard nofile 8192" | sudo tee -a /etc/security/limits.conf
+
+# Systemd service limits
+sudo mkdir -p /etc/systemd/system/ovpmd.service.d/
+cat > /tmp/limits.conf << 'EOF'
+[Service]
+LimitNOFILE=8192
+EOF
+sudo mv /tmp/limits.conf /etc/systemd/system/ovpmd.service.d/
+
+# Reload systemd và restart
+sudo systemctl daemon-reload
+sudo systemctl restart ovpmd
+```
+
+---
+
+## 🔐 Security Best Practices
+
+### Certificate Management
+
+```bash
+# Xem certificate details
+sudo ovpm vpn show-ca
+sudo ovpm vpn show-cert
+
+# Revoke user certificate (nếu user bị compromise)
+sudo ovpm user revoke -u compromised-user
+
+# Generate new CA (extreme cases)
+# sudo ovpm vpn reinit --hostname vpn.yourdomain.com
+```
+
+### Access Control
+
+```bash
+# Restrict Web UI access
+sudo ufw delete allow 8080/tcp
+sudo ufw allow from 192.168.1.0/24 to any port 8080
+
+# VPN port security
+sudo ufw allow from any to any port 1197 proto udp
+
+# SSH access hardening
+sudo ufw allow from 192.168.1.0/24 to any port 22
+```
+
+### Audit và Monitoring
+
+```bash
+# Enable detailed logging
+sudo ovpm vpn update --log-level debug
+
+# Log rotation setup
+cat > /etc/logrotate.d/ovpm << 'EOF'
+/var/log/openvpn/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    sharedscripts
+    postrotate
+        systemctl reload ovpmd > /dev/null 2>&1 || true
+    endscript
+}
+EOF
+```
+
+---
+
+## 🚨 Troubleshooting Guide
+
+### Vấn đề thường gặp và cách khắc phục
+
+#### 1. Clients không connect được VPN
+
+**Triệu chứng:**
+```
+Connection timeout hoặc authentication failed
+```
+
+**Khắc phục:**
+```bash
+# Kiểm tra VPN server đang chạy
+sudo systemctl status ovpmd
+sudo ovpm vpn status
+
+# Kiểm tra port listening
+sudo netstat -tulpn | grep 1197
+
+# Kiểm tra firewall
+sudo ufw status
+sudo iptables -L -v -n
+
+# Test từ client
+telnet vpn.yourdomain.com 1197
+```
+
+#### 2. Connect VPN thành công nhưng không truy cập được LAN
+
+**Triệu chứng:**
+```
+VPN connected, assigned IP 10.9.0.x
+Không ping được 192.168.1.x
+```
+
+**Khắc phục:**
+```bash
+# Kiểm tra IP forwarding
+cat /proc/sys/net/ipv4/ip_forward  # Phải = 1
+
+# Kiểm tra routes
+sudo ovpm net list
+ip route show
+
+# Kiểm tra iptables NAT rules
+sudo iptables -t nat -L -v -n | grep MASQUERADE
+
+# Fix NAT rules
+sudo iptables -t nat -A POSTROUTING -s 10.9.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
+```
+
+#### 3. Web UI không accessible
+
+**Triệu chứng:**
+```
+Connection refused trên port 8080
+```
+
+**Khắc phục:**
+```bash
+# Kiểm tra OVPMD running
+sudo systemctl status ovpmd
+
+# Kiểm tra port 8080
+sudo netstat -tulpn | grep 8080
+sudo lsof -i :8080
+
+# Kiểm tra firewall
+sudo ufw allow 8080/tcp
+
+# Test local access
+curl -I http://127.0.0.1:8080
+curl -I http://192.168.1.210:8080
+```
+
+#### 4. OVPM commands không hoạt động
+
+**Triệu chứng:**
+```bash
+$ ovpm user list
+FATA[0000] rpc error: code = Unavailable desc = connection error
+```
+
+**Khắc phục:**
+```bash
+# Restart OVPMD daemon
+sudo systemctl restart ovpmd
+sudo systemctl status ovpmd
+
+# Kiểm tra logs
+sudo journalctl -u ovpmd -n 20
+
+# Check permissions
+ls -la /var/db/ovpm/
+sudo chown -R ovpm:ovpm /var/db/ovpm/
+```
+
+#### 5. Certificate errors
+
+**Triệu chứng:**
+```
+TLS handshake failed
+Certificate verification error  
+```
+
+**Khắc phục:**
+```bash
+# Kiểm tra certificates
+sudo ovpm vpn show-ca
+sudo ovpm vpn show-cert
+
+# Regenerate user certificate
+sudo ovpm user delete -u problematic-user
+sudo ovpm user create -u problematic-user -p newpassword
+
+# Regenerate .ovpn file
+sudo ovpm user genconfig -u problematic-user -o /home/$(whoami)/vpn-configs/
 ```
 
 ---
