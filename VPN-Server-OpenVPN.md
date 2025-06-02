@@ -162,10 +162,38 @@ sudo ovpm vpn init --hostname vpn.yourdomain.com
 
 ```bash
 # Cấu hình để VPN clients truy cập LAN
-sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1,8.8.8.8"
+sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1"
 
 # Cập nhật port tùy chỉnh (nếu cần)
 sudo ovpm vpn update --port 1197 --hostname vpn.yourdomain.com
+```
+
+### ⚠️ **Quan trọng: DNS Configuration trong OVPM**
+
+**🚨 OVPM chỉ hỗ trợ MỘT DNS server duy nhất:**
+
+```bash
+# ✅ CÚ PHÁP ĐÚNG - Một DNS server
+sudo ovpm vpn update --dns "192.168.1.1"
+sudo ovpm vpn update --dns "8.8.8.8"
+
+# ❌ CÚ PHÁP SAI - Multiple DNS servers
+sudo ovpm vpn update --dns "192.168.1.1,8.8.8.8"
+# Error: '192.168.1.1,8.8.8.8' is not an IPv4 address
+```
+
+**💡 Workaround cho Multiple DNS:**
+Để có multiple DNS servers, bạn cần sửa file OpenVPN config sau khi OVPM generate:
+
+```bash
+# 1. Xem file config hiện tại
+sudo cat /var/db/ovpm/server.conf | grep "push.*DNS"
+
+# 2. Thêm DNS thứ hai manually (sau khi OVPM update)
+echo 'push "dhcp-option DNS 8.8.8.8"' | sudo tee -a /var/db/ovpm/server.conf
+
+# 3. Restart OpenVPN (không restart ovpmd để giữ config)
+sudo systemctl restart openvpn@server
 ```
 
 ### Bước 3: Kiểm tra VPN Server Status
@@ -181,7 +209,7 @@ VPN Server Status:
 Hostname: vpn.yourdomain.com
 Port: 1197/UDP  
 Network: 10.9.0.0/24
-DNS: 192.168.1.1, 8.8.8.8
+DNS: 192.168.1.1
 Status: Running
 ```
 
@@ -451,8 +479,26 @@ sudo ovpm net list
 
 #### Cập nhật DNS Settings
 ```bash
-# Update DNS servers cho VPN clients
-sudo ovpm vpn update --dns "192.168.1.1,8.8.8.8,8.8.4.4"
+# Update DNS server cho VPN clients (chỉ một DNS)
+sudo ovpm vpn update --dns "192.168.1.1"
+
+# Hoặc sử dụng public DNS
+sudo ovpm vpn update --dns "8.8.8.8"
+```
+
+**🔧 Multiple DNS Servers:**
+Vì OVPM limitation, để có multiple DNS:
+
+```bash
+# 1. Set primary DNS via OVPM
+sudo ovpm vpn update --dns "192.168.1.1"
+
+# 2. Add secondary DNS manually
+echo 'push "dhcp-option DNS 8.8.8.8"' | sudo tee -a /var/db/ovpm/server.conf
+echo 'push "dhcp-option DNS 8.8.4.4"' | sudo tee -a /var/db/ovpm/server.conf
+
+# 3. Restart OpenVPN service only
+sudo systemctl restart openvpn@server
 ```
 
 ---
@@ -522,6 +568,17 @@ sudo iptables -L -v -n
 sudo iptables -t nat -L -v -n
 ```
 
+### 🔧 DNS Issues trong VPN:
+```bash
+# Kiểm tra DNS settings trong VPN config
+sudo grep -i dns /var/db/ovpm/server.conf
+
+# Fix DNS nếu cần multiple servers
+sudo ovpm vpn update --dns "192.168.1.1"  # Primary
+echo 'push "dhcp-option DNS 8.8.8.8"' | sudo tee -a /var/db/ovpm/server.conf
+sudo systemctl restart openvpn@server
+```
+
 ---
 
 ## 🛠️ Advanced Configuration
@@ -533,10 +590,25 @@ sudo iptables -t nat -L -v -n
 ```bash
 # Update server settings
 sudo ovpm vpn update --port 1197 --proto udp
-sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1,8.8.8.8"
+sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1"
 
 # Enable/disable compression (deprecated trong newer versions)
 sudo ovpm vpn update --enable-use-lzo  # Not recommended
+```
+
+**⚠️ DNS Limitation Fix:**
+```bash
+# Sau khi set primary DNS qua OVPM
+sudo ovpm vpn update --dns "192.168.1.1"
+
+# Thêm secondary DNS servers manually
+sudo cat >> /var/db/ovpm/server.conf << 'EOF'
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+EOF
+
+# Restart OpenVPN để apply
+sudo systemctl restart openvpn@server
 ```
 
 ### Backup và Restore
@@ -709,6 +781,17 @@ sudo iptables -t nat -L -v -n | grep MASQUERADE
 
 # Fix NAT rules
 sudo iptables -t nat -A POSTROUTING -s 10.9.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
+```
+
+**🔧 DNS Issues trong VPN:**
+```bash
+# Kiểm tra DNS settings trong VPN config
+sudo grep -i dns /var/db/ovpm/server.conf
+
+# Fix DNS nếu cần multiple servers
+sudo ovpm vpn update --dns "192.168.1.1"  # Primary
+echo 'push "dhcp-option DNS 8.8.8.8"' | sudo tee -a /var/db/ovpm/server.conf
+sudo systemctl restart openvpn@server
 ```
 
 #### 3. Web UI không accessible
@@ -1057,104 +1140,4 @@ grep discord_webhook ovpm_config.json
 ```
 
 ### 3. OVPM commands fail:
-```bash
-# Test OVPM access
-ovpm --version
-ovpm vpn status
-sudo systemctl status ovpmd
-
-# Check if user has proper permissions
-which ovpm
 ```
-
-### 4. Timezone issues:
-Script tự động sử dụng Vietnam timezone (+7). Logs sẽ hiển thị:
-```
-2024-01-15 14:30:15 ICT+07 [INFO] Health check started
-## ✅ Danh sách kiểm tra sẵn sàng cho Production
-
-- [ ] Các gói phụ thuộc Python đã được cài đặt trong môi trường ảo
-- [ ] Các lệnh OVPM có thể truy cập và hoạt động
-- [ ] Webhook Discord đã được cấu hình và kiểm tra
-- [ ] Dịch vụ đã được kích hoạt với tự động khởi động khi boot
-- [ ] Đã thiết lập xoay vòng log cho `/var/log/ovpm_health.log`
-- [ ] Đã xác minh kết nối mạng
-- [ ] Ngưỡng cảnh báo đã được điều chỉnh cho môi trường
-- [ ] Đã sao lưu các file cấu hình
-```
-
-## 🔒 Các vấn đề về bảo mật
-
-- Script chạy với quyền người dùng phù hợp
-- Không lưu trữ thông tin đăng nhập nhạy cảm trong logs
-- URL webhook Discord được bảo vệ
-- File logs có quyền truy cập phù hợp
-- Cô lập dịch vụ với systemd
-
-## 🎯 Tích hợp với Hạ tầng OVPM
-
-Health checker hoàn hảo cho triển khai OVPM production:
-- Giám sát máy chủ VPN trên `192.168.1.210:1197`
-- Theo dõi khả năng truy cập Web UI trên cổng `8080`
-- Xác minh phân giải DNS cho hostname
-- Báo cáo hoạt động người dùng và trạng thái kết nối
-- Cung cấp cảnh báo sớm cho các vấn đề về tài nguyên
-
-## 📞 Hỗ trợ & Xử lý sự cố
-
-Nếu gặp vấn đề:
-1. **Kiểm tra logs dịch vụ**: `sudo journalctl -u ovpm-health-checker -f`
-2. **Chạy kiểm tra thủ công**: `cd /home/tantai/healthcheck && ./venv/bin/python3 ovpm_health_checker.py`
-3. **Xác minh OVPM**: `sudo ovpm vpn status`
-4. **Kiểm tra Discord**: Xác minh URL webhook và kết nối mạng
-5. **Xem hướng dẫn cài đặt**: Xem `SETUP-GUIDE.md` trong thư mục để biết hướng dẫn chi tiết
-
----
-
-## Kết quả triển khai
-
-Hoàn tất việc triển khai OpenVPN Server với OVPM cho mục đích truy cập mạng LAN và Database VMs! 
-
-**Những gì đã đạt được:**
-- ✅ VPN Server chạy trên IP `192.168.1.210` port `1197/UDP`
-- ✅ Web UI quản lý trên port `8080/TCP`
-- ✅ Có thể truy cập mạng LAN `192.168.1.0/24` từ VPN clients
-- ✅ File `.ovpn` để cấu hình clients
-- ✅ Routing cho truy cập Database VMs
-- ✅ Firewall và security đã được cấu hình
-- ✅ Monitoring và troubleshooting tools
-
-**Các bước tiếp theo:**
-1. Download file `.ovpn` từ `/home/$(whoami)/vpn-configs/`
-2. Import vào OpenVPN client (Windows/Mac/Mobile)
-3. Connect và test truy cập database VMs
-4. Sử dụng Web UI tại `http://vpn.yourdomain.com:8080` để quản lý
-
-VPN server đã hoạt động hoàn hảo cho Database Infrastructure!
-
----
-
-## 🔗 Tích hợp vào Quy trình DevOps Hoàn Chỉnh
-
-OpenVPN Server đã hoàn thiện **truy cập từ xa an toàn** cho hạ tầng home lab. Đây là bước tiến hóa từ việc mở port cơ bản sang bảo mật cấp doanh nghiệp.
-
-### 🚀 Hành Trình Tự Động Hoá Toàn Diện:
-
-**Cấp 1: Tự động hoá phần cứng**
-- ✅ [Wake On LAN](Wake-On-LAN.md) - Quản lý bật/tắt server từ xa
-
-**Cấp 2: Tự động hoá ứng dụng**  
-- ✅ [ESXi VM Autostart](ESXi-VM-Autostart.md) - Khởi động dịch vụ tự động
-
-**Cấp 3: Mở dịch vụ ra mạng**
-- ✅ [Port Forwarding](Port-Forwarding.md) - Mở dịch vụ cơ bản ra ngoài
-
-**Cấp 4: Bảo mật doanh nghiệp** (Hiện tại)
-- ✅ **OpenVPN Server** - Truy cập an toàn vào database và LAN
-
-**Cấp 5: Điều phối container** (Sắp tới)
-- 🎯 **Kubernetes/Docker Swarm** - Mô hình triển khai hiện đại
-
-### 🔒 Tiến hoá bảo mật:
-
-**📋 Cách tiếp cận cũ:** 
