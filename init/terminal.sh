@@ -1,37 +1,47 @@
-# Install Zsh
-echo "🔧 Installing Zsh..."
+#!/bin/bash
+
+# Get the actual user (not root when using sudo)
+ACTUAL_USER=${SUDO_USER:-$USER}
+ACTUAL_HOME=$(eval echo ~$ACTUAL_USER)
+
+echo "🔧 Installing Zsh for user: $ACTUAL_USER"
+echo "📁 Home directory: $ACTUAL_HOME"
+
+# Install packages
+echo "📦 Installing required packages..."
 sudo apt update
 sudo apt install zsh git curl wget -y
 
-# Set Zsh as default shell
-echo "✅ Setting Zsh as default shell..."
-chsh -s $(which zsh)
+# Set Zsh as default shell for the actual user
+echo "✅ Setting Zsh as default shell for $ACTUAL_USER..."
+sudo chsh -s $(which zsh) $ACTUAL_USER
 
-# Install Oh My Zsh (non-interactive, prevent auto-zsh switch)
+# Install Oh My Zsh for the actual user (run as the user, not root)
 echo "💡 Installing Oh My Zsh..."
+sudo -u $ACTUAL_USER bash -c '
 export RUNZSH=no
 export CHSH=no
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+'
 
-# Custom plugin directory
-ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
+# Set paths for the actual user
+ZSH_DIR="$ACTUAL_HOME/.oh-my-zsh"
+ZSH_CUSTOM="$ZSH_DIR/custom"
 
-# Install plugin zsh-autosuggestions
+# Install plugins as the actual user
 echo "🔌 Installing plugin zsh-autosuggestions..."
-git clone https://github.com/zsh-users/zsh-autosuggestions $ZSH_CUSTOM/plugins/zsh-autosuggestions
+sudo -u $ACTUAL_USER git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 
-# Install plugin zsh-syntax-highlighting
 echo "🎨 Installing plugin zsh-syntax-highlighting..."
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM/plugins/zsh-syntax-highlighting
+sudo -u $ACTUAL_USER git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 
-# Install theme powerlevel10k
 echo "✨ Installing theme powerlevel10k..."
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/themes/powerlevel10k
+sudo -u $ACTUAL_USER git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
 
-# Customize .zshrc
-echo "⚙️  Customizing ~/.zshrc..."
-cat > ~/.zshrc <<'EOF'
-export ZSH="$HOME/.oh-my-zsh"
+# Create .zshrc for the actual user
+echo "⚙️  Creating ~/.zshrc for $ACTUAL_USER..."
+sudo -u $ACTUAL_USER tee "$ACTUAL_HOME/.zshrc" > /dev/null <<EOF
+export ZSH="$ACTUAL_HOME/.oh-my-zsh"
 ZSH_THEME="robbyrussell"
 
 plugins=(
@@ -40,16 +50,15 @@ plugins=(
   zsh-syntax-highlighting
 )
 
-source $ZSH/oh-my-zsh.sh
+source \$ZSH/oh-my-zsh.sh
 EOF
 
-# Customize theme
+# Create custom theme
 CUSTOM_THEME_NAME="robbyrussell"
 CUSTOM_THEME_PATH="$ZSH_CUSTOM/themes/$CUSTOM_THEME_NAME.zsh-theme"
 
 echo "[+] Setting custom Zsh theme..."
-
-cat > "$CUSTOM_THEME_PATH" << 'EOF'
+sudo -u $ACTUAL_USER tee "$CUSTOM_THEME_PATH" > /dev/null <<'EOF'
 PROMPT="%(?:%{$fg_bold[green]%}%1{➜%} :%{$fg_bold[red]%}%1{➜%} ) %{$fg[magenta]%}[%m] %{$fg[cyan]%}%c%{$reset_color%}"
 PROMPT+=' $(git_prompt_info)'
 
@@ -60,8 +69,13 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 EOF
 
 # Update .zshrc to use new theme
-sed -i "s/^ZSH_THEME=.*/ZSH_THEME=\"$CUSTOM_THEME_NAME\"/" ~/.zshrc
+sudo -u $ACTUAL_USER sed -i "s/^ZSH_THEME=.*/ZSH_THEME=\"$CUSTOM_THEME_NAME\"/" "$ACTUAL_HOME/.zshrc"
 
-# Reload zsh
-echo "[+] Setup complete! Reloading Zsh..."
-exec zsh
+# Set proper ownership for all files
+echo "🔐 Setting proper file ownership..."
+sudo chown -R $ACTUAL_USER:$ACTUAL_USER "$ACTUAL_HOME/.oh-my-zsh"
+sudo chown $ACTUAL_USER:$ACTUAL_USER "$ACTUAL_HOME/.zshrc"
+
+echo "[+] Setup complete!"
+echo "💡 To start using Zsh, run: su - $ACTUAL_USER"
+echo "💡 Or logout and login again to use Zsh as default shell"
