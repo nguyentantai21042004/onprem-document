@@ -98,33 +98,6 @@ sudo netplan apply
 ping 8.8.8.8  # Test kết nối
 ```
 
-### 1.3 Cấu Hình Hostname
-
-Thiết lập hostname cho từng VM:
-```bash
-# VM1
-sudo hostnamectl set-hostname mongo-primary
-
-# VM2  
-sudo hostnamectl set-hostname mongo-secondary1
-
-# VM3
-sudo hostnamectl set-hostname mongo-secondary2
-```
-
-Cập nhật file `/etc/hosts` trên cả 3 VMs:
-```bash
-sudo nano /etc/hosts
-```
-
-Nội dung file `/etc/hosts`:
-```
-127.0.0.1   localhost
-192.168.1.20   mongo-primary
-192.168.1.21   mongo-secondary1  
-192.168.1.22   mongo-secondary2
-```
-
 ## PHẦN 2: CÀI ĐẶT MONGODB
 
 ### 2.1 Script Cài Đặt Tự Động
@@ -184,8 +157,6 @@ Tạo file cấu hình `/etc/mongod.conf` (giống nhau trên cả 3 VMs):
 # Storage configuration  
 storage:
   dbPath: /var/lib/mongodb
-  journal:
-    enabled: true
   wiredTiger:
     engineConfig:
       cacheSizeGB: 2  # 50% of available RAM
@@ -214,7 +185,7 @@ processManagement:
 
 # Replication configuration
 replication:
-  replSetName: "learningRS"
+  replSetName: "test"
   oplogSizeMB: 1024  # 1GB oplog
 
 # Operation profiling
@@ -243,14 +214,14 @@ mongosh --port 27017
 
 Kết nối vào MongoDB:
 ```bash
-mongosh --host mongo-primary --port 27017
+mongosh --host <mongo-primary-IP> --port 27017
 ```
 
 Trong MongoDB Shell, chạy lệnh khởi tạo:
 ```javascript
 // Khởi tạo replica set
 rs.initiate({
-  _id: "learningRS",
+  _id: "test",
   members: [
     { 
       _id: 0, 
@@ -334,7 +305,7 @@ rs.conf()
 rs.isMaster()
 
 // Kiểm tra replication lag
-rs.printSlaveReplicationInfo()
+rs.printSecondaryReplicationInfo()
 ```
 
 ### 4.2 Test Write và Read
