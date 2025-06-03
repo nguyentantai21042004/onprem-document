@@ -60,11 +60,11 @@ Tạo 3 máy ảo với cấu hình:
 
 **Thông tin các nodes:**
 
-| Node | Hostname | IP Address | Role |
-|------|----------|------------|------|
-| VM1 | mongo-primary | 192.168.1.20 | Primary Node |
-| VM2 | mongo-secondary1 | 192.168.1.21 | Secondary Node |
-| VM3 | mongo-secondary2 | 192.168.1.22 | Secondary Node |
+| Node | IP Address | Role |
+|------|------------|------|
+| VM1 | 192.168.1.20 | Primary Node |
+| VM2 | 192.168.1.21 | Secondary Node |
+| VM3 | 192.168.1.22 | Secondary Node |
 
 ### 1.2 Cấu Hình Network
 
@@ -86,7 +86,7 @@ network:
     enp0s3:  # Tên interface của bạn
       dhcp4: no
       addresses:
-        - 192.168.1.20/24  # Thay đổi cho từng VM
+        - 192.168.1.20/24  # Thay đổi cho từng VM: 192.168.1.21, 192.168.1.22
       gateway4: 192.168.1.1
       nameservers:
         addresses: [8.8.8.8, 8.8.4.4]
@@ -185,7 +185,7 @@ processManagement:
 
 # Replication configuration
 replication:
-  replSetName: "test"
+  replSetName: "learningRS"
   oplogSizeMB: 1024  # 1GB oplog
 
 # Operation profiling
@@ -212,30 +212,30 @@ mongosh --port 27017
 
 ### 3.1 Khởi Tạo Replica Set (Chỉ trên VM1 - Primary)
 
-Kết nối vào MongoDB:
+Kết nối vào MongoDB trên Primary node:
 ```bash
-mongosh --host <mongo-primary-IP> --port 27017
+mongosh --host 192.168.1.20 --port 27017
 ```
 
 Trong MongoDB Shell, chạy lệnh khởi tạo:
 ```javascript
 // Khởi tạo replica set
 rs.initiate({
-  _id: "test",
+  _id: "learningRS",
   members: [
     { 
       _id: 0, 
-      host: "mongo-primary:27017",
+      host: "192.168.1.20:27017",
       priority: 2  // Ưu tiên cao nhất làm Primary
     },
     { 
       _id: 1, 
-      host: "mongo-secondary1:27017",
+      host: "192.168.1.21:27017",
       priority: 1  // Có thể làm Primary
     },
     { 
       _id: 2, 
-      host: "mongo-secondary2:27017", 
+      host: "192.168.1.22:27017", 
       priority: 1  // Có thể làm Primary
     }
   ]
@@ -254,26 +254,26 @@ Tạo file `setup-replica-set.sh` trên VM1:
 echo "Setting up MongoDB Replica Set..."
 
 # Kiểm tra MongoDB đang chạy trên tất cả nodes
-for host in mongo-primary mongo-secondary1 mongo-secondary2; do
-    echo "Checking MongoDB on $host..."
-    mongosh --host $host --port 27017 --eval "db.runCommand('ping')" --quiet
+for ip in 192.168.1.20 192.168.1.21 192.168.1.22; do
+    echo "Checking MongoDB on $ip..."
+    mongosh --host $ip --port 27017 --eval "db.runCommand('ping')" --quiet
     if [ $? -eq 0 ]; then
-        echo "✓ $host is accessible"
+        echo "✓ $ip is accessible"
     else
-        echo "✗ Cannot connect to $host"
+        echo "✗ Cannot connect to $ip"
         exit 1
     fi
 done
 
 # Khởi tạo replica set
 echo "Initializing replica set..."
-mongosh --host mongo-primary --port 27017 --eval '
+mongosh --host 192.168.1.20 --port 27017 --eval '
 rs.initiate({
   _id: "learningRS",
   members: [
-    { _id: 0, host: "mongo-primary:27017", priority: 2 },
-    { _id: 1, host: "mongo-secondary1:27017", priority: 1 },
-    { _id: 2, host: "mongo-secondary2:27017", priority: 1 }
+    { _id: 0, host: "192.168.1.20:27017", priority: 2 },
+    { _id: 1, host: "192.168.1.21:27017", priority: 1 },
+    { _id: 2, host: "192.168.1.22:27017", priority: 1 }
   ]
 })
 '
@@ -282,7 +282,7 @@ echo "Waiting for replica set to initialize..."
 sleep 30
 
 echo "Checking replica set status..."
-mongosh --host mongo-primary --port 27017 --eval 'rs.status()' --quiet
+mongosh --host 192.168.1.20 --port 27017 --eval 'rs.status()' --quiet
 
 echo "Replica set setup completed!"
 ```
@@ -292,8 +292,8 @@ echo "Replica set setup completed!"
 ### 4.1 Kiểm Tra Trạng Thái Cluster
 
 ```javascript
-// Kết nối vào bất kỳ node nào
-mongosh --host mongo-primary --port 27017
+// Kết nối vào Primary node
+mongosh --host 192.168.1.20 --port 27017
 
 // Xem trạng thái replica set
 rs.status()
@@ -313,7 +313,7 @@ rs.printSecondaryReplicationInfo()
 **Test ghi dữ liệu trên Primary:**
 ```javascript
 // Kết nối vào Primary
-mongosh --host mongo-primary --port 27017
+mongosh --host 192.168.1.20 --port 27017
 
 // Tạo database và collection
 use testdb
@@ -338,7 +338,7 @@ db.users.find().pretty()
 **Test đọc từ Secondary:**
 ```javascript
 // Kết nối vào Secondary node
-mongosh --host mongo-secondary1 --port 27017
+mongosh --host 192.168.1.21 --port 27017
 
 // Enable read từ secondary
 rs.secondaryOk()
@@ -370,16 +370,16 @@ db.users.insertOne({name: "Test Failover", timestamp: new Date()})
 Trong NoSQLBooster, tạo connection mới với thông tin:
 - **Connection Name**: MongoDB Learning Cluster
 - **Connection Type**: MongoDB
-- **Host**: mongo-primary,mongo-secondary1,mongo-secondary2
+- **Host**: 192.168.1.20,192.168.1.21,192.168.1.22
 - **Port**: 27017
 - ☑ **This is a replica set connection**
 - **Replica Set Name**: learningRS
 - **Database**: admin
-- **Authentication**: None (for now)
+- **Authentication**: None
 
 Hoặc dùng URI format:
 ```
-mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/admin?replicaSet=learningRS
+mongodb://192.168.1.20:27017,192.168.1.21:27017,192.168.1.22:27017/admin?replicaSet=learningRS
 ```
 
 ### 5.2 Advanced Settings
@@ -416,266 +416,6 @@ db.products.insertOne({
 })
 ```
 
-## PHẦN 5A: THIẾT LẬP AUTHENTICATION VÀ TẠO USER
-
-### 5A.1 Tạo Admin User (Chỉ trên Primary Node)
-
-**Bước 1: Kết nối vào Primary Node**
-```bash
-mongosh --host mongo-primary --port 27017
-```
-
-**Bước 2: Tạo Admin User**
-```javascript
-// Chuyển sang database admin
-use admin
-
-// Tạo user admin với full permissions
-db.createUser({
-  user: "mongoAdmin",
-  pwd: "SecurePassword123!",
-  roles: [
-    { role: "root", db: "admin" },
-    { role: "clusterAdmin", db: "admin" },
-    { role: "readWriteAnyDatabase", db: "admin" },
-    { role: "userAdminAnyDatabase", db: "admin" }
-  ]
-})
-
-// Verify user đã được tạo
-db.getUsers()
-```
-
-**Bước 3: Tạo Application User**
-```javascript
-// Tạo user cho application
-db.createUser({
-  user: "appUser", 
-  pwd: "AppPassword456!",
-  roles: [
-    { role: "readWrite", db: "testdb" },
-    { role: "readWrite", db: "productiondb" }
-  ]
-})
-
-// Tạo user chỉ đọc
-db.createUser({
-  user: "readOnlyUser",
-  pwd: "ReadOnlyPass789!",
-  roles: [
-    { role: "read", db: "testdb" },
-    { role: "read", db: "productiondb" }
-  ]
-})
-```
-
-### 5A.2 Enable Authentication
-
-**Bước 1: Tạo Keyfile cho Replica Set Authentication**
-Trên Primary node:
-```bash
-# Tạo keyfile
-sudo mkdir -p /opt/mongodb
-sudo openssl rand -base64 756 > /tmp/mongodb-keyfile
-sudo mv /tmp/mongodb-keyfile /opt/mongodb/mongodb-keyfile
-sudo chmod 400 /opt/mongodb/mongodb-keyfile
-sudo chown mongodb:mongodb /opt/mongodb/mongodb-keyfile
-```
-
-**Bước 2: Copy keyfile sang các Secondary nodes**
-```bash
-# Từ Primary node, copy sang Secondary nodes
-scp /opt/mongodb/mongodb-keyfile user@mongo-secondary1:/tmp/
-scp /opt/mongodb/mongodb-keyfile user@mongo-secondary2:/tmp/
-
-# Trên mỗi Secondary node
-sudo mkdir -p /opt/mongodb
-sudo mv /tmp/mongodb-keyfile /opt/mongodb/
-sudo chmod 400 /opt/mongodb/mongodb-keyfile
-sudo chown mongodb:mongodb /opt/mongodb/mongodb-keyfile
-```
-
-**Bước 3: Cập nhật cấu hình MongoDB (trên cả 3 nodes)**
-```bash
-sudo nano /etc/mongod.conf
-```
-
-Thêm phần security vào file cấu hình:
-```yaml
-# ... existing configuration ...
-
-# Security configuration
-security:
-  authorization: enabled
-  keyFile: /opt/mongodb/mongodb-keyfile
-
-# ... rest of configuration ...
-```
-
-**Bước 4: Restart tất cả MongoDB services**
-```bash
-# Trên cả 3 nodes, restart lần lượt (bắt đầu từ Secondary)
-# Secondary nodes trước
-sudo systemctl restart mongod
-
-# Primary node cuối cùng
-sudo systemctl restart mongod
-```
-
-### 5A.3 Test Authentication
-
-```bash
-# Test kết nối với admin user
-mongosh --host mongo-primary --port 27017 -u mongoAdmin -p SecurePassword123! --authenticationDatabase admin
-
-# Test trong MongoDB shell
-db.runCommand({connectionStatus: 1})
-rs.status()
-```
-
-### 5A.4 Tạo Connection URLs cho NoSQL Booster
-
-**Admin Connection (Full Access):**
-```
-mongodb://mongoAdmin:SecurePassword123!@mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/admin?replicaSet=learningRS&authSource=admin
-```
-
-**Application User Connection:**
-```
-mongodb://appUser:AppPassword456!@mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/testdb?replicaSet=learningRS&authSource=admin
-```
-
-**Read Only Connection:**
-```
-mongodb://readOnlyUser:ReadOnlyPass789!@mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/testdb?replicaSet=learningRS&authSource=admin
-```
-
-### 5A.5 Cấu hình NoSQL Booster với Authentication
-
-**Cách 1: Sử dụng URI Connection String**
-1. Mở NoSQL Booster
-2. File → New Connection
-3. Chọn "URI" tab
-4. Paste một trong các connection string ở trên
-5. Test Connection
-
-**Cách 2: Cấu hình Manual**
-1. **Connection Name**: MongoDB Secure Cluster
-2. **Connection Type**: MongoDB
-3. **Host**: mongo-primary,mongo-secondary1,mongo-secondary2
-4. **Port**: 27017
-5. ☑ **This is a replica set connection**
-6. **Replica Set Name**: learningRS
-7. **Database**: admin
-8. **Authentication**: Username/Password
-9. **Username**: mongoAdmin
-10. **Password**: SecurePassword123!
-11. **Auth Database**: admin
-
-### 5A.6 Script Tạo Users Tự Động
-
-Tạo file `create-users.sh`:
-```bash
-#!/bin/bash
-echo "Creating MongoDB Users..."
-
-# Kết nối và tạo users
-mongosh --host mongo-primary --port 27017 --eval '
-use admin
-
-// Tạo admin user
-try {
-  db.createUser({
-    user: "mongoAdmin",
-    pwd: "SecurePassword123!",
-    roles: [
-      { role: "root", db: "admin" },
-      { role: "clusterAdmin", db: "admin" }
-    ]
-  })
-  print("✓ Admin user created successfully")
-} catch(e) {
-  print("Admin user might already exist: " + e.message)
-}
-
-// Tạo application user  
-try {
-  db.createUser({
-    user: "appUser",
-    pwd: "AppPassword456!",
-    roles: [
-      { role: "readWrite", db: "testdb" },
-      { role: "readWrite", db: "productiondb" }
-    ]
-  })
-  print("✓ Application user created successfully")
-} catch(e) {
-  print("Application user might already exist: " + e.message)
-}
-
-// Tạo read-only user
-try {
-  db.createUser({
-    user: "readOnlyUser", 
-    pwd: "ReadOnlyPass789!",
-    roles: [
-      { role: "read", db: "testdb" },
-      { role: "read", db: "productiondb" }
-    ]
-  })
-  print("✓ Read-only user created successfully")
-} catch(e) {
-  print("Read-only user might already exist: " + e.message)
-}
-
-print("=== User creation completed ===")
-print("Admin URI: mongodb://mongoAdmin:SecurePassword123!@mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/admin?replicaSet=learningRS&authSource=admin")
-print("App URI: mongodb://appUser:AppPassword456!@mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/testdb?replicaSet=learningRS&authSource=admin")
-print("ReadOnly URI: mongodb://readOnlyUser:ReadOnlyPass789!@mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/testdb?replicaSet=learningRS&authSource=admin")
-'
-
-echo "Users created! Connection strings printed above."
-```
-
-Chạy script:
-```bash
-chmod +x create-users.sh
-./create-users.sh
-```
-
-### 5A.7 Quản Lý Users
-
-**Xem danh sách users:**
-```javascript
-// Kết nối với admin credentials
-use admin
-db.getUsers()
-
-// Xem users của database cụ thể
-use testdb
-db.getUsers()
-```
-
-**Thay đổi password:**
-```javascript
-use admin
-db.changeUserPassword("appUser", "NewPassword123!")
-```
-
-**Xóa user:**
-```javascript
-use admin
-db.dropUser("username")
-```
-
-**Thêm role cho user:**
-```javascript
-use admin
-db.grantRolesToUser("appUser", [
-  { role: "readWrite", db: "newdatabase" }
-])
-```
-
 ## PHẦN 6: SCRIPT MONITORING
 
 ### 6.1 Health Check Script
@@ -689,13 +429,13 @@ echo
 
 # Function to check individual node
 check_node() {
-    local host=$1
+    local ip=$1
     local name=$2
     
-    echo "Checking $name ($host)..."
+    echo "Checking $name ($ip)..."
     
-    if mongosh --host $host --port 27017 --eval "db.runCommand('ping')" --quiet > /dev/null 2>&1; then
-        role=$(mongosh --host $host --port 27017 --eval "
+    if mongosh --host $ip --port 27017 --eval "db.runCommand('ping')" --quiet > /dev/null 2>&1; then
+        role=$(mongosh --host $ip --port 27017 --eval "
             try {
                 var status = rs.status();
                 var self = status.members.find(m => m.self);
@@ -712,9 +452,9 @@ check_node() {
 }
 
 # Check all nodes
-check_node "mongo-primary" "Primary Node"
-check_node "mongo-secondary1" "Secondary Node 1"  
-check_node "mongo-secondary2" "Secondary Node 2"
+check_node "192.168.1.20" "Primary Node"
+check_node "192.168.1.21" "Secondary Node 1"  
+check_node "192.168.1.22" "Secondary Node 2"
 
 echo
 echo "=== End Health Check ==="
@@ -759,9 +499,9 @@ rs.status()
 rs.initiate({
   _id: "learningRS",
   members: [
-    { _id: 0, host: "mongo-primary:27017" },
-    { _id: 1, host: "mongo-secondary1:27017" },
-    { _id: 2, host: "mongo-secondary2:27017" }
+    { _id: 0, host: "192.168.1.20:27017" },
+    { _id: 1, host: "192.168.1.21:27017" },
+    { _id: 2, host: "192.168.1.22:27017" }
   ]
 })
 ```
@@ -769,22 +509,48 @@ rs.initiate({
 **Lỗi 3: NoSQLBooster không connect được**
 ```bash
 # Test từ command line
-mongosh "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=learningRS"
+mongosh "mongodb://192.168.1.20:27017,192.168.1.21:27017,192.168.1.22:27017/?replicaSet=learningRS"
 
-# Nếu connect được từ command line nhưng NoSQLBooster không được:
-# - Kiểm tra hostname resolution
-# - Thử dùng IP thay vì hostname
-# - Check firewall rules
+# Nếu vẫn không được:
+# - Kiểm tra firewall rules
+# - Ping test từng IP
+# - Kiểm tra MongoDB log files
+```
+
+### 7.2 Các lệnh hữu ích
+
+**Kiểm tra log MongoDB:**
+```bash
+sudo tail -f /var/log/mongodb/mongod.log
+```
+
+**Restart toàn bộ cluster:**
+```bash
+# Trên từng node, restart lần lượt (bắt đầu từ Secondary)
+sudo systemctl restart mongod
+```
+
+**Kiểm tra kết nối network:**
+```bash
+# Ping test
+ping 192.168.1.20
+ping 192.168.1.21
+ping 192.168.1.22
+
+# Port test
+telnet 192.168.1.20 27017
+telnet 192.168.1.21 27017
+telnet 192.168.1.22 27017
 ```
 
 ## Tóm Tắt Quy Trình
 
-1. **Chuẩn bị**: Tạo 3 VMs với Ubuntu 22.04, cấu hình network và hostname
-2. **Cài đặt**: Chạy script cài MongoDB trên cả 3 nodes
-3. **Cấu hình**: Sửa file mongod.conf để enable replication
-4. **Khởi tạo**: Chạy rs.initiate() trên Primary node
-5. **Kiểm tra**: Test write/read và failover
-6. **Kết nối**: Cấu hình NoSQLBooster với connection string
-7. **Monitoring**: Sử dụng các script để theo dõi cluster
+1. **Chuẩn bị**: Tạo 3 VMs với Ubuntu 22.04, cấu hình IP tĩnh
+2. **Cài đặt**: Chạy script cài MongoDB trên cả 3 nodes (192.168.1.20, 192.168.1.21, 192.168.1.22)
+3. **Cấu hình**: Sửa file mongod.conf để enable replication với replSetName "learningRS"
+4. **Khởi tạo**: Chạy rs.initiate() trên Primary node (192.168.1.20)
+5. **Kiểm tra**: Test write/read và failover giữa các nodes
+6. **Kết nối**: Cấu hình NoSQLBooster với connection string sử dụng IP
+7. **Monitoring**: Sử dụng script để theo dõi cluster health
 
-Replica Set này sẽ cung cấp high availability, automatic failover, và khả năng đọc từ secondary nodes để phân tải.
+Replica Set này sẽ cung cấp high availability, automatic failover, và khả năng đọc từ secondary nodes để phân tải. Tất cả kết nối sử dụng IP address trực tiếp thay vì hostname để tránh vấn đề DNS resolution.
