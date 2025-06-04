@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # Get the actual user (not root when using sudo)
-ACTUAL_USER=tantai
 ACTUAL_HOME=/home/tantai
 ZSH_CUSTOM="$ACTUAL_HOME/.oh-my-zsh/custom"
 
-echo "Installing Zsh for user: $ACTUAL_USER"
+echo "Installing Zsh for user: $ACTUAL_HOME"
 echo "Home directory: $ACTUAL_HOME"
 echo "ZSH_CUSTOM: $ZSH_CUSTOM"
 
@@ -17,7 +16,7 @@ sudo apt install zsh -y
 zsh --version
 
 # Set zsh as default shell
-chsh -s $(which zsh) $ACTUAL_USER
+chsh -s $(which zsh)
 
 # Install Oh My Zsh
 if [ ! -d "$ACTUAL_HOME/.oh-my-zsh" ]; then
@@ -67,5 +66,5 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 EOF
 
 echo "Setup complete!"
-echo "To start using Zsh, run: su - $ACTUAL_USER"
+echo "To start using Zsh, run: su - $ACTUAL_HOME"
 echo "Or logout and login again to use Zsh as default shell"
