@@ -1,0 +1,233 @@
+# Global configuration
+global:
+  # SMTP settings (not used for Discord)
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@localhost'
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route configuration
+route:
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # Wait time before sending first notification for a group
+  group_wait: 10s
+  
+  # Wait time before sending notification about new alerts added to group
+  group_interval: 10s
+  
+  # Wait time before resending notification
+  repeat_interval: 1h
+  
+  # Default receiver
+  receiver: 'discord-general'
+  
+  # Sub-routes for different alert types
+  routes:
+    # Critical alerts - immediate notification
+    - matchers:
+        - severity="critical"
+      receiver: 'discord-critical'
+      group_wait: 5s
+      repeat_interval: 15m
+    
+    # Warning alerts - batched notification  
+    - matchers:
+        - severity="warning"
+      receiver: 'discord-warnings'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+      
+    # Infrastructure alerts - special handling
+    - matchers:
+        - service="infrastructure"
+      receiver: 'discord-infrastructure'
+      group_wait: 5s
+      repeat_interval: 10m
+      
+    # VPN alerts - special handling
+    - matchers:
+        - service="vpn"
+      receiver: 'discord-vpn'
+      group_wait: 5s
+      repeat_interval: 15m
+
+# Receivers configuration
+receivers:
+  # General alerts receiver
+  - name: 'discord-general'
+    discord_configs:
+        - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+          send_resolved: true
+        title: |
+          {{ if eq .Status "firing" }}🔔 **ALERT TRIGGERED**{{ else }}✅ **ALERT RESOLVED**{{ end }}
+        message: |
+          {{ if eq .Status "firing" }}
+          **📊 MONITORING ALERT**
+          
+          **🔢 Alert Count:** {{ len .Alerts }} alert(s)
+          **⏰ Time:** {{ (.Alerts | first).StartsAt.Format "2006-01-02 15:04:05" }}
+          
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          {{ .Annotations.description }}
+          
+          ---
+          {{ end }}
+          {{ else }}
+          **✅ ALERT RESOLVED**
+          
+          **🔢 Resolved:** {{ len .Alerts }} alert(s)
+          **⏰ Resolved At:** {{ (.Alerts | first).EndsAt.Format "2006-01-02 15:04:05" }}
+          
+          {{ range .Alerts }}
+          **✅ {{ .Annotations.summary }}**
+          {{ end }}
+          {{ end }}
+
+  # Critical alerts receiver
+  - name: 'discord-critical'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: |
+          {{ if eq .Status "firing" }}🚨 **CRITICAL ALERT**{{ else }}✅ **CRITICAL RESOLVED**{{ end }}
+        message: |
+          {{ if eq .Status "firing" }}
+          @everyone
+          
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          
+          {{ .Annotations.description }}
+          
+          **🔗 Runbook:** <https://your-runbook-url.com|Emergency Procedures>
+          **📞 Escalation:** Contact on-call engineer immediately
+          
+          ---
+          {{ end }}
+          {{ else }}
+          **✅ CRITICAL ISSUE RESOLVED**
+          
+          **⏰ Resolved At:** {{ (.Alerts | first).EndsAt.Format "2006-01-02 15:04:05" }}
+          **⌛ Duration:** {{ (.Alerts | first).EndsAt.Sub (.Alerts | first).StartsAt }}
+          
+          {{ range .Alerts }}
+          **✅ {{ .Annotations.summary }}**
+          
+          System is back to normal operation.
+          {{ end }}
+          {{ end }}
+
+  # Warning alerts receiver  
+  - name: 'discord-warnings'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: |
+          {{ if eq .Status "firing" }}⚠️ **WARNING ALERT**{{ else }}✅ **WARNING RESOLVED**{{ end }}
+        message: |
+          {{ if eq .Status "firing" }}
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          
+          {{ .Annotations.description }}
+          
+          ---
+          {{ end }}
+          {{ else }}
+          **✅ WARNING RESOLVED**
+          
+          **⏰ Resolved At:** {{ (.Alerts | first).EndsAt.Format "2006-01-02 15:04:05" }}
+          
+          {{ range .Alerts }}
+          **✅ {{ .Annotations.summary }}**
+          {{ end }}
+          {{ end }}
+
+  # Infrastructure alerts receiver
+  - name: 'discord-infrastructure'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: |
+          {{ if eq .Status "firing" }}🏗️ **INFRASTRUCTURE ALERT**{{ else }}✅ **INFRASTRUCTURE RESOLVED**{{ end }}
+        message: |
+          {{ if eq .Status "firing" }}
+          @here
+          
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          
+          {{ .Annotations.description }}
+          
+          **🔧 Infrastructure Team:** Please investigate immediately
+          **📈 Dashboard:** <https://grafana.yourdomain.com|View Metrics>
+          
+          ---
+          {{ end }}
+          {{ else }}
+          **✅ INFRASTRUCTURE RESTORED**
+          
+          **⏰ Resolved At:** {{ (.Alerts | first).EndsAt.Format "2006-01-02 15:04:05" }}
+          **⌛ Downtime:** {{ (.Alerts | first).EndsAt.Sub (.Alerts | first).StartsAt }}
+          
+          {{ range .Alerts }}
+          **✅ {{ .Annotations.summary }}**
+          {{ end }}
+          {{ end }}
+
+  # VPN alerts receiver
+  - name: 'discord-vpn'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: |
+          {{ if eq .Status "firing" }}🌐 **VPN ALERT**{{ else }}✅ **VPN RESTORED**{{ end }}
+        message: |
+          {{ if eq .Status "firing" }}
+          @here
+          
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          
+          {{ .Annotations.description }}
+          
+          **🌐 VPN Impact:** Remote access may be affected
+          **👥 Users Affected:** All remote workers
+          **🔧 Network Team:** Please check VPN infrastructure
+          
+          ---
+          {{ end }}
+          {{ else }}
+          **✅ VPN SERVICE RESTORED**
+          
+          **⏰ Restored At:** {{ (.Alerts | first).EndsAt.Format "2006-01-02 15:04:05" }}
+          **⌛ Outage Duration:** {{ (.Alerts | first).EndsAt.Sub (.Alerts | first).StartsAt }}
+          
+          {{ range .Alerts }}
+          **✅ {{ .Annotations.summary }}**
+          
+          **📢 Announcement:** VPN service is fully operational. All users can reconnect.
+          {{ end }}
+          {{ end }}
+
+# Inhibit rules - Prevent spam
+inhibit_rules:
+  # Inhibit warning if critical alert is firing for same instance
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['alertname', 'instance']
+    
+  # Inhibit duplicate alerts
+  - source_matchers:
+      - alertname="InstanceDown"
+    target_matchers:
+      - alertname=~"High.*Usage"
+    equal: ['instance']

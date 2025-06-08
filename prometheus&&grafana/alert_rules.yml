@@ -10,19 +10,8 @@ groups:
           severity: critical
           service: infrastructure
         annotations:
-          summary: "🔴 **CRITICAL** - Server Down: {{ $labels.instance }}"
-          description: |
-            **🚨 SYSTEM OUTAGE DETECTED 🚨**
-            
-            **📍 Instance:** `{{ $labels.instance }}`
-            **🏷️ Job:** `{{ $labels.job }}`
-            **⏰ Duration:** More than 1 minute
-            **🔥 Severity:** Critical
-            
-            **📊 Status:** Server is completely unreachable
-            **🔧 Action Required:** Immediate investigation needed
-            
-            **🕒 Alert Time:** {{ $labels.alertname }} at {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "Instance {{ $labels.instance }} is down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
 
       # Alert when VPN service might be down
       - alert: VPNNodeDown
@@ -32,25 +21,8 @@ groups:
           severity: critical
           service: vpn
         annotations:
-          summary: "🔴 **CRITICAL** - VPN Server Down: {{ $labels.instance }}"
-          description: |
-            **🚨 VPN SERVICE OUTAGE 🚨**
-            
-            **🌐 VPN Server:** `{{ $labels.instance }}`
-            **⏰ Duration:** More than 2 minutes
-            **🔥 Severity:** Critical
-            
-            **📊 Impact:** 
-            • VPN connections may be dropped
-            • Remote access unavailable
-            • Network routing affected
-            
-            **🔧 Immediate Actions:**
-            1. Check VPN server status
-            2. Verify network connectivity
-            3. Restart VPN service if needed
-            
-            **🕒 Alert Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "VPN VM is unreachable"
+          description: "VPN VM at {{ $labels.instance }} has been unreachable for more than 2 minutes. VPN service might be down."
 
   # Resource usage alerts  
   - name: resource.rules
@@ -63,25 +35,8 @@ groups:
           severity: warning
           service: system
         annotations:
-          summary: "⚠️ **WARNING** - High CPU Usage: {{ $labels.instance }}"
-          description: |
-            **📈 HIGH RESOURCE USAGE DETECTED**
-            
-            **💻 Server:** `{{ $labels.instance }}`
-            **📊 CPU Usage:** > 80% for 5+ minutes
-            **🔥 Severity:** Warning
-            
-            **💡 Possible Causes:**
-            • Heavy processes running
-            • Resource-intensive applications
-            • System under high load
-            
-            **🔧 Recommended Actions:**
-            1. Check running processes: `top` or `htop`
-            2. Identify resource-heavy applications
-            3. Consider scaling or optimization
-            
-            **🕒 Alert Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}."
 
       # High memory usage
       - alert: HighMemoryUsage
@@ -91,26 +46,8 @@ groups:
           severity: warning
           service: system
         annotations:
-          summary: "⚠️ **WARNING** - High Memory Usage: {{ $labels.instance }}"
-          description: |
-            **🧠 HIGH MEMORY USAGE DETECTED**
-            
-            **💻 Server:** `{{ $labels.instance }}`
-            **📊 Memory Usage:** > 85% for 5+ minutes
-            **🔥 Severity:** Warning
-            
-            **💡 Possible Causes:**
-            • Memory leaks in applications
-            • Too many running processes
-            • Insufficient RAM for workload
-            
-            **🔧 Recommended Actions:**
-            1. Check memory usage: `free -h`
-            2. Identify memory-heavy processes: `ps aux --sort=-%mem`
-            3. Restart problematic services if needed
-            4. Consider adding more RAM
-            
-            **🕒 Alert Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}."
 
       # Disk space usage
       - alert: DiskSpaceLow
@@ -120,27 +57,8 @@ groups:
           severity: warning
           service: system
         annotations:
-          summary: "⚠️ **WARNING** - Low Disk Space: {{ $labels.instance }}"
-          description: |
-            **💾 LOW DISK SPACE WARNING**
-            
-            **💻 Server:** `{{ $labels.instance }}`
-            **📁 Filesystem:** `{{ $labels.mountpoint }}`
-            **📊 Available Space:** < 15%
-            **🔥 Severity:** Warning
-            
-            **💡 Impact:**
-            • System performance may degrade
-            • Applications may fail to write files
-            • Log rotation may be affected
-            
-            **🔧 Recommended Actions:**
-            1. Check disk usage: `df -h`
-            2. Clean up temporary files
-            3. Archive or delete old logs
-            4. Consider expanding storage
-            
-            **🕒 Alert Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space is below 15% on {{ $labels.instance }} filesystem {{ $labels.mountpoint }}."
 
       # Critical disk space
       - alert: DiskSpaceCritical
@@ -150,29 +68,8 @@ groups:
           severity: critical
           service: system
         annotations:
-          summary: "🔴 **CRITICAL** - Disk Space Almost Full: {{ $labels.instance }}"
-          description: |
-            **🚨 CRITICAL DISK SPACE ALERT 🚨**
-            
-            **💻 Server:** `{{ $labels.instance }}`
-            **📁 Filesystem:** `{{ $labels.mountpoint }}`
-            **📊 Available Space:** < 5% (CRITICAL!)
-            **🔥 Severity:** Critical
-            
-            **💥 IMMEDIATE IMPACT:**
-            • System may become unresponsive
-            • Applications will fail
-            • Data loss possible
-            • Services may crash
-            
-            **🚨 URGENT ACTIONS REQUIRED:**
-            1. **IMMEDIATELY** free up space
-            2. Delete unnecessary files: `du -h --max-depth=1 /`
-            3. Stop non-essential services
-            4. Clear logs: `journalctl --vacuum-time=1d`
-            5. Contact system administrator
-            
-            **🕒 Alert Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk space is below 5% on {{ $labels.instance }} filesystem {{ $labels.mountpoint }}."
 
   # Network alerts
   - name: network.rules
@@ -185,29 +82,5 @@ groups:
           severity: warning
           service: network
         annotations:
-          summary: "⚠️ **WARNING** - High Network Traffic: {{ $labels.instance }}"
-          description: |
-            **🌐 HIGH NETWORK TRAFFIC DETECTED**
-            
-            **💻 Server:** `{{ $labels.instance }}`
-            **📊 Traffic Rate:** > 100 MB/s for 10+ minutes
-            **🔥 Severity:** Warning
-            
-            **💡 Possible Causes:**
-            • Large file transfers
-            • DDoS attack
-            • Backup operations
-            • Heavy application traffic
-            
-            **📈 Monitoring Suggestions:**
-            1. Check network interfaces: `iftop` or `nload`
-            2. Monitor active connections: `netstat -i`
-            3. Identify high-traffic processes
-            4. Verify if traffic is legitimate
-            
-            **🔧 Actions if Needed:**
-            • Implement traffic shaping
-            • Check for security threats
-            • Scale network resources
-            
-            **🕒 Alert Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          summary: "High network traffic on {{ $labels.instance }}"
+          description: "Network traffic is above 100MB/s for more than 10 minutes on {{ $labels.instance }}."
