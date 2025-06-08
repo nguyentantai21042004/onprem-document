@@ -1,0 +1,166 @@
+version: '3.8'
+
+# Define networks to connect servicesconnect services
+networks:
+  monitoring:
+    driver: bridge
+
+# Define volumes to persist data
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+
+services:
+  # Prometheus - Time Series Database and Monitoring Core
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    hostname: prometheus
+    restart: unless-stopped
+
+    # Expose Prometheus web interface
+    ports:
+      - "9090:9090"
+    # Mount config files and data
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    
+    # Command line arguments
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    
+    networks:
+      - monitoring
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  # Grafana - Visualization and Analytics
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: grafana
+    hostname: grafana
+    restart: unless-stopped
+
+    # Expose Grafana web interface
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    
+    environment:
+      # Security settings
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=21042004
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      
+      # Server settings
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      
+      # Database settings
+      - GF_DATABASE_TYPE=sqlite3
+      - GF_DATABASE_PATH=/var/lib/grafana/grafana.db
+      
+      # Disable user registration
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_ALLOW_ORG_CREATE=false
+      
+      # Enable anonymous access to dashboards
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    
+    networks:
+      - monitoring
+    
+    # Wait for prometheus to be ready
+    depends_on:
+      - prometheus
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Alertmanager - Alerting and Notification Center
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    hostname: alertmanager
+    restart: unless-stopped
+
+    # Expose Alertmanager web interface
+    ports:
+      - "9093:9093"
+    
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--cluster.advertise-address=0.0.0.0:9093'
+    
+    networks:
+      - monitoring
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # Node Exporter - System metrics for monitoring VM
+  node-exporter:
+    image: prom/node-exporter:v1.6.0
+    container_name: node-exporter
+    hostname: node-exporter
+    restart: unless-stopped
+    
+    ports:
+      - "9100:9100"
+    
+    # Mount host filesystem to collect metrics
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    
+    networks:
+      - monitoring
+    
+    # Run with host network to access system metrics
+    pid: host
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
