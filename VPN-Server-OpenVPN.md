@@ -68,9 +68,7 @@
 
 ## 🚀 Cài đặt OVPM
 
-### Phương pháp 1: Cài đặt từ DEB Package (Ubuntu/Debian)
-
-**✅ Khuyến nghị cho Ubuntu 16.04+**
+### Phương pháp sử dụng trong repo này: Cài đặt từ DEB Package (Ubuntu/Debian)
 
 ```bash
 # 1. Thêm OVPM Repository
@@ -89,41 +87,6 @@ sudo systemctl enable ovpmd
 # 5. Kiểm tra service status
 sudo systemctl status ovpmd
 ```
-
-### Phương pháp 2: Cài đặt từ RPM Package (CentOS/Fedora)
-
-```bash
-# 1. Cài đặt dependencies
-sudo yum install yum-utils epel-release -y
-
-# 2. Thêm OVPM Repository
-sudo yum-config-manager --add-repo https://cad.github.io/ovpm/rpm/ovpm.repo
-
-# 3. Cài đặt OVPM
-sudo yum install ovpm
-
-# 4. Enable và start service
-sudo systemctl start ovpmd
-sudo systemctl enable ovpmd
-```
-
-### Phương pháp 3: Cài đặt từ Source Code
-
-```bash
-# 1. Cài đặt Go (nếu chưa có)
-sudo apt install golang-go
-
-# 2. Install OVPM từ source
-go get -u github.com/cad/ovpm/...
-
-# 3. Tạo users và groups cần thiết
-sudo useradd nobody
-sudo groupadd nogroup
-
-# 4. Chạy OVPMD daemon
-sudo ovpmd
-```
-
 ### ✅ Xác minh cài đặt thành công
 
 ```bash
@@ -181,21 +144,6 @@ sudo ovpm vpn update --dns "8.8.8.8"
 sudo ovpm vpn update --dns "192.168.1.1,8.8.8.8"
 # Error: '192.168.1.1,8.8.8.8' is not an IPv4 address
 ```
-
-**💡 Workaround cho Multiple DNS:**
-Để có multiple DNS servers, bạn cần sửa file OpenVPN config sau khi OVPM generate:
-
-```bash
-# 1. Xem file config hiện tại
-sudo cat /var/db/ovpm/server.conf | grep "push.*DNS"
-
-# 2. Thêm DNS thứ hai manually (sau khi OVPM update)
-echo 'push "dhcp-option DNS 8.8.8.8"' | sudo tee -a /var/db/ovpm/server.conf
-
-# 3. Restart OpenVPN (không restart ovpmd để giữ config)
-sudo systemctl restart openvpn@server
-```
-
 ### Bước 3: Kiểm tra VPN Server Status
 
 ```bash
