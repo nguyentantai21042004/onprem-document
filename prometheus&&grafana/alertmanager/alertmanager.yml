@@ -46,6 +46,16 @@ route:
       repeat_interval: 2h
       continue: false
 
+    # =============================================================================
+    # PERIODIC REPORTS
+    # =============================================================================
+    - matchers:
+        - category="report"
+      receiver: 'discord-reports'
+      group_wait: 5s
+      repeat_interval: 1h
+      continue: false
+
 receivers:
   # =============================================================================
   # VPN-SPECIFIC RECEIVERS - First priority
@@ -156,6 +166,21 @@ receivers:
           
           **Instance:** {{ .Labels.instance }}
           **Time:** {{ .StartsAt.Format "15:04:05" }}
+          
+          ---
+          {{ end }}
+
+  # =============================================================================
+  # PERIODIC REPORTS RECEIVER
+  # =============================================================================
+  - name: 'discord-reports'
+    webhook_configs:
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: false
+        title: '📊 Periodic Health Report'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.description }}
           
           ---
           {{ end }}

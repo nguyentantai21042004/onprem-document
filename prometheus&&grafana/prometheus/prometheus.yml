@@ -15,6 +15,7 @@ global:
 # Load alert rules from these files
 rule_files:
   - "alert_rules.yml"
+  - "health_report_rules.yml"
 
 # Alertmanager configuration
 alerting:
