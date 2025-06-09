@@ -1,4 +1,4 @@
-# /opt/monitoring/prometheus/health_report_rules.yml
+# /opt/monitoring/prometheus/health_rules.yml
 groups:
   # =============================================================================
   # HEALTH REPORT RECORDING RULES - Calculate health metrics
