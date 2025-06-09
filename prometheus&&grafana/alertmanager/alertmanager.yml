@@ -1,0 +1,83 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@localhost'
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'discord-general'
+
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: 'discord-critical'
+      group_wait: 5s
+      repeat_interval: 15m
+
+    - matchers:
+        - severity="warning"
+      receiver: 'discord-warnings'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+
+receivers:
+  - name: 'discord-general'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: '🔔 Monitoring Alert'
+        message: |
+          **📊 MONITORING ALERT**
+
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          {{ .Annotations.description }}
+
+          **Status:** {{ .Status }}
+          **Labels:** {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          ---
+          {{ end }}
+
+  - name: 'discord-critical'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: '🚨 CRITICAL ALERT'
+        message: |
+          @everyone
+          **🚨 CRITICAL ISSUE DETECTED 🚨**
+
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          {{ .Annotations.description }}
+
+          **🔗 Action Required:** Immediate investigation needed!
+          **Instance:** {{ .Labels.instance }}
+          ---
+          {{ end }}
+
+  - name: 'discord-warnings'
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: '⚠️ Warning Alert'
+        message: |
+          **⚠️ Warning Alert**
+
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          {{ .Annotations.description }}
+
+          **Instance:** {{ .Labels.instance }}
+          ---
+          {{ end }}
+
+inhibit_rules:
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['alertname', 'instance']
