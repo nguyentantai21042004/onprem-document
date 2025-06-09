@@ -1,17 +1,18 @@
-# Global configuration
+# /opt/monitoring/prometheus/prometheus.yml
 global:
   # Scrape targets every 15 seconds
   scrape_interval: 15s
-
-  # Evaluate alert rules every 15 seconds
+  
+  # Evaluate alert rules every 15 seconds  
   evaluation_interval: 15s
-
-  # Attach labels to all metrics
+  
+  # Attach these labels to all time series
   external_labels:
-    monitor: 'monitoring'
-    environment: 'homelab'
+    monitor: 'homelab-monitoring'
+    environment: 'development'
+    cluster: 'esxi-homelab'
 
-# Rule files - Define alert conditions
+# Load alert rules from these files
 rule_files:
   - "alert_rules.yml"
 
@@ -20,47 +21,52 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - alertmanager:9093
+          - 'alertmanager:9093'
+      timeout: 10s
+      path_prefix: '/'
 
-# Scrape configurations - Define targets to monitor
+# Scrape configuration - Define what to monitor
 scrape_configs:
+  # =============================================================================
   # Monitor Prometheus itself
+  # =============================================================================
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
     scrape_interval: 15s
+    scrape_timeout: 10s
     metrics_path: '/metrics'
+    scheme: 'http'
 
-  # Monitor Node Exporter on monitoring VM
-  - job_name: 'monitoring-node'
+  # =============================================================================
+  # Monitor the monitoring VM itself (Node Exporter)
+  # =============================================================================
+  - job_name: 'monitoring-vm'
     static_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 15s
+    scrape_timeout: 10s
     metrics_path: '/metrics'
+    scheme: 'http'
 
-  # Monitor VPN VM - Node Exporter
-  - job_name: 'vpn-node'
-    static_configs:
-      - targets: ['192.168.1.210:9100']
-    scrape_interval: 15s
-    metrics_path: '/metrics'
-    # Optional: Add labels
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: '192.168.1.210:9100'
-
-  # Monitor Alertmanager
+  # =============================================================================
+  # Monitor AlertManager
+  # =============================================================================
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['alertmanager:9093']
-    scrape_interval: 15s
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    scheme: 'http'
 
+  # =============================================================================
   # Monitor Grafana
+  # =============================================================================
   - job_name: 'grafana'
     static_configs:
       - targets: ['grafana:3000']
-    scrape_interval: 15s
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    scheme: 'http'

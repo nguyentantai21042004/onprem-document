@@ -1,3 +1,4 @@
+# /opt/monitoring/datasources/prometheus.yml
 apiVersion: 1
 
 # List of datasources to insert/update

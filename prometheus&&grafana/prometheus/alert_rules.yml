@@ -1,44 +1,148 @@
+# /opt/monitoring/prometheus/alert_rules.yml
 groups:
+  # =============================================================================
+  # INFRASTRUCTURE ALERTS - Core system availability
+  # =============================================================================
   - name: infrastructure.rules
+    interval: 15s
     rules:
-      - alert: InstanceDown
+      - alert: ServiceDown
         expr: up == 0
         for: 1m
         labels:
           severity: critical
-          service: infrastructure
+          category: infrastructure
+          impact: high
         annotations:
-          summary: "Instance {{ $labels.instance }} is down"
-          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+          summary: "🚨 Service {{ $labels.job }} is DOWN"
+          description: |
+            Service {{ $labels.job }} at {{ $labels.instance }} has been unreachable for more than 1 minute.
+            
+            **Current Status:** DOWN
+            **Duration:** {{ $value }}
+            **Job:** {{ $labels.job }}
+            **Instance:** {{ $labels.instance }}
 
-      - alert: VPNNodeDown
-        expr: up{job="vpn-node"} == 0
+      - alert: MonitoringVMDown  
+        expr: up{job="monitoring-vm"} == 0
         for: 2m
         labels:
           severity: critical
-          service: vpn
+          category: infrastructure
+          impact: critical
         annotations:
-          summary: "VPN VM is unreachable"
-          description: "VPN VM at {{ $labels.instance }} has been unreachable for more than 2 minutes."
+          summary: "🚨 MONITORING VM IS DOWN"
+          description: |
+            The monitoring VM itself is unreachable! This means we might lose visibility into other systems.
+            
+            **IMMEDIATE ACTION REQUIRED**
+            **Instance:** {{ $labels.instance }}
+            **Duration:** More than 2 minutes
 
+  # =============================================================================
+  # RESOURCE ALERTS - CPU, Memory, Disk usage
+  # =============================================================================
   - name: resource.rules
+    interval: 15s
     rules:
       - alert: HighCPUUsage
         expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
         for: 5m
         labels:
           severity: warning
-          service: system
+          category: resources
+          impact: medium
         annotations:
-          summary: "High CPU usage on {{ $labels.instance }}"
-          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}."
+          summary: "⚠️ High CPU usage on {{ $labels.instance }}"
+          description: |
+            CPU usage has been above 80% for more than 5 minutes.
+            
+            **Current Usage:** {{ $value | humanizePercentage }}
+            **Threshold:** 80%
+            **Instance:** {{ $labels.instance }}
+            **Duration:** 5+ minutes
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: resources
+          impact: high
+        annotations:
+          summary: "🚨 CRITICAL CPU usage on {{ $labels.instance }}"
+          description: |
+            CPU usage is critically high (>95%) for more than 2 minutes!
+            
+            **Current Usage:** {{ $value | humanizePercentage }}
+            **Threshold:** 95%
+            **Instance:** {{ $labels.instance }}
 
       - alert: HighMemoryUsage
         expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
         for: 5m
         labels:
           severity: warning
-          service: system
+          category: resources
+          impact: medium
         annotations:
-          summary: "High memory usage on {{ $labels.instance }}"
-          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}."
+          summary: "⚠️ High memory usage on {{ $labels.instance }}"
+          description: |
+            Memory usage has been above 85% for more than 5 minutes.
+            
+            **Current Usage:** {{ $value | humanizePercentage }}
+            **Available Memory:** {{ query "node_memory_MemAvailable_bytes{instance='$labels.instance'}" | first | value | humanizeBytes }}
+            **Total Memory:** {{ query "node_memory_MemTotal_bytes{instance='$labels.instance'}" | first | value | humanizeBytes }}
+
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: resources
+          impact: high
+        annotations:
+          summary: "🚨 CRITICAL memory usage on {{ $labels.instance }}"
+          description: |
+            Memory usage is critically high (>95%)! System may become unresponsive.
+            
+            **Current Usage:** {{ $value | humanizePercentage }}
+            **Available Memory:** {{ query "node_memory_MemAvailable_bytes{instance='$labels.instance'}" | first | value | humanizeBytes }}
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+          impact: medium
+        annotations:
+          summary: "⚠️ High disk usage on {{ $labels.instance }}"
+          description: |
+            Disk usage on {{ $labels.mountpoint }} has been above 85% for more than 10 minutes.
+            
+            **Current Usage:** {{ $value | humanizePercentage }}
+            **Mount Point:** {{ $labels.mountpoint }}
+            **Free Space:** {{ query "node_filesystem_free_bytes{instance='$labels.instance',mountpoint='$labels.mountpoint'}" | first | value | humanizeBytes }}
+
+  # =============================================================================
+  # NETWORK ALERTS - Connectivity and performance
+  # =============================================================================
+  - name: network.rules
+    interval: 30s
+    rules:
+      - alert: HighNetworkReceive
+        expr: rate(node_network_receive_bytes_total[5m]) > 100 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+          category: network
+          impact: low
+        annotations:
+          summary: "⚠️ High network receive on {{ $labels.instance }}"
+          description: |
+            Network interface {{ $labels.device }} is receiving more than 100MB/s for 5+ minutes.
+            
+            **Current Rate:** {{ $value | humanizeBytes }}/s
+            **Interface:** {{ $labels.device }}
+            **Instance:** {{ $labels.instance }}

@@ -1,16 +1,36 @@
+# /opt/monitoring/grafana/provisioning/datasources/prometheus.yml
 apiVersion: 1
 
-# List of datasources to insert/update
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+
 datasources:
-  # Prometheus datasource
   - name: Prometheus
     type: prometheus
     access: proxy
+    orgId: 1
     url: http://prometheus:9090
+    password: ''
+    user: ''
+    database: ''
+    basicAuth: false
+    basicAuthUser: ''
+    basicAuthPassword: ''
+    withCredentials: false
     isDefault: true
-    editable: true
     jsonData:
-      timeInterval: "15s"
-      queryTimeout: "60s"
+      graphiteVersion: "1.1"
+      tlsAuth: false
+      tlsAuthWithCACert: false
       httpMethod: "POST"
-    secureJsonData: {}
+      queryTimeout: "60s"
+      timeInterval: "15s"
+    secureJsonData:
+      tlsCACert: ""
+      tlsClientCert: ""
+      tlsClientKey: ""
+      password: ""
+      basicAuthPassword: ""
+    version: 1
+    editable: true

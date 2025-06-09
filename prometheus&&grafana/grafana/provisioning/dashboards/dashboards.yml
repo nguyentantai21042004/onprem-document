@@ -1,14 +1,15 @@
+# /opt/monitoring/grafana/provisioning/dashboards/dashboards.yml
 apiVersion: 1
 
 providers:
-  # Default dashboard provider
-  - name: 'default'
+  - name: 'Default'
     orgId: 1
     folder: ''
+    folderUid: ''
     type: file
     disableDeletion: false
     editable: true
     updateIntervalSeconds: 10
     allowUiUpdates: true
     options:
-      path: /opt/grafana/provisioning/dashboards
+      path: /opt/monitoring/grafana/dashboards
