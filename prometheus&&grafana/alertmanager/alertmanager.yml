@@ -1,10 +1,10 @@
 # /opt/monitoring/alertmanager/alertmanager.yml
 global:
   # Global SMTP configuration (for email alerts - optional)
-  smtp_smarthost: 'localhost:587'
-  smtp_from: 'alertmanager@yourdomain.com'
-  smtp_auth_username: ''
-  smtp_auth_password: ''
+  # smtp_smarthost: 'localhost:587'
+  # smtp_from: 'alertmanager@yourdomain.com'
+  # smtp_auth_username: ''
+  # smtp_auth_password: ''
   
   # Global webhook configurations
   http_config:
@@ -15,7 +15,7 @@ global:
 
 # Templates for customizing notifications
 templates:
-  - '/etc/alertmanager/templates/*.tmpl'
+  - '/opt/monitoring/alertmanager/templates/*.tmpl'
 
 # Route tree for alerts
 route:
@@ -62,7 +62,7 @@ receivers:
   
   - name: 'discord-general'
     webhook_configs:
-      - url: 'YOUR_DISCORD_WEBHOOK_URL_HERE'
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
         http_config:
           proxy_url: ''
@@ -83,7 +83,7 @@ receivers:
 
   - name: 'discord-critical'
     webhook_configs:
-      - url: 'YOUR_DISCORD_WEBHOOK_URL_HERE'
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
         title: '🚨 CRITICAL ALERT - IMMEDIATE ACTION REQUIRED'
         text: |
@@ -108,7 +108,7 @@ receivers:
 
   - name: 'discord-warnings'
     webhook_configs:
-      - url: 'YOUR_DISCORD_WEBHOOK_URL_HERE'
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
         title: '⚠️ Warning Alert'
         text: |
@@ -129,7 +129,7 @@ receivers:
 
   - name: 'discord-infrastructure'
     webhook_configs:
-      - url: 'YOUR_DISCORD_WEBHOOK_URL_HERE'
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
         title: '🏗️ Infrastructure Alert'
         text: |
