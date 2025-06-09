@@ -1,72 +1,112 @@
 # /opt/monitoring/alertmanager/alertmanager.yml
 global:
-  # Global SMTP configuration (for email alerts - optional)
-  # smtp_smarthost: 'localhost:587'
-  # smtp_from: 'alertmanager@yourdomain.com'
-  # smtp_auth_username: ''
-  # smtp_auth_password: ''
-  
-  # Global webhook configurations
-  http_config:
-    proxy_url: ''
-  
-  # Resolve timeout
   resolve_timeout: 5m
 
-# Templates for customizing notifications
-templates:
-  - '/opt/monitoring/alertmanager/templates/*.tmpl'
-
-# Route tree for alerts
 route:
-  # Default settings
   group_by: ['alertname', 'cluster', 'service']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 12h
   receiver: 'discord-general'
   
-  # Child routes with specific conditions
   routes:
-    # Critical alerts - immediate notification
+    # =============================================================================
+    # VPN ALERTS - First priority, send immediately
+    # =============================================================================
+    - matchers:
+        - vm_type="vpn"
+        - severity="critical"
+      receiver: 'discord-vpn-critical'
+      group_wait: 5s
+      repeat_interval: 15m
+      continue: false
+
+    - matchers:
+        - vm_type="vpn"
+        - severity="warning"
+      receiver: 'discord-vpn-warning'
+      group_wait: 30s
+      repeat_interval: 1h
+      continue: false
+
+    # =============================================================================
+    # GENERAL ALERTS
+    # =============================================================================
     - matchers:
         - severity="critical"
       receiver: 'discord-critical'
       group_wait: 5s
-      group_interval: 30s
       repeat_interval: 30m
       continue: false
 
-    # Warning alerts - less urgent
     - matchers:
         - severity="warning"
-      receiver: 'discord-warnings'
+      receiver: 'discord-warning'
       group_wait: 30s
-      group_interval: 5m
       repeat_interval: 2h
       continue: false
 
-    # Infrastructure alerts - separate channel
-    - matchers:
-        - category="infrastructure"
-      receiver: 'discord-infrastructure'
-      group_wait: 10s
-      repeat_interval: 1h
-      continue: false
-
-# Notification receivers
 receivers:
   # =============================================================================
-  # DISCORD WEBHOOKS - Replace with your actual webhook URLs
+  # VPN-SPECIFIC RECEIVERS - First priority
   # =============================================================================
-  
+  - name: 'discord-vpn-critical'
+    webhook_configs:
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: '🚨 VPN CRITICAL - IMMEDIATE ACTION REQUIRED'
+        text: |
+          @everyone @here
+          **🚨 VPN INFRASTRUCTURE CRITICAL ALERT 🚨**
+          
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          
+          {{ .Annotations.description }}
+          
+          **🔍 VPN Details:**
+          • Instance: {{ .Labels.instance }}
+          • VM Type: {{ .Labels.vm_type }}
+          • Impact Level: {{ .Labels.impact }}
+          • Started: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          
+          **⚡ CRITICAL: VPN services may be unavailable!**
+          **🔧 Action: Check VM status immediately**
+          
+          ---
+          {{ end }}
+
+  - name: 'discord-vpn-warning'
+    webhook_configs:
+      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
+        send_resolved: true
+        title: '⚠️ VPN Warning Alert'
+        text: |
+          **⚠️ VPN Performance Warning**
+          
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          
+          {{ .Annotations.description }}
+          
+          **VPN Details:**
+          • Instance: {{ .Labels.instance }}
+          • Impact: {{ .Labels.impact }}
+          • Time: {{ .StartsAt.Format "15:04:05" }}
+          
+          💡 Monitor closely - may affect VPN performance
+          
+          ---
+          {{ end }}
+
+  # =============================================================================
+  # GENERAL RECEIVERS
+  # =============================================================================
   - name: 'discord-general'
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        http_config:
-          proxy_url: ''
-        title: '📊 Monitoring Alert - General'
+        title: '📊 Monitoring Alert'
         text: |
           **📊 HOMELAB MONITORING**
           
@@ -74,9 +114,8 @@ receivers:
           **Alert:** {{ .Annotations.summary }}
           **Description:** {{ .Annotations.description }}
           **Status:** {{ .Status }}
-          **Severity:** {{ .Labels.severity }}
           **Instance:** {{ .Labels.instance }}
-          **Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          **Time:** {{ .StartsAt.Format "15:04:05" }}
           
           ---
           {{ end }}
@@ -85,7 +124,7 @@ receivers:
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        title: '🚨 CRITICAL ALERT - IMMEDIATE ACTION REQUIRED'
+        title: '🚨 CRITICAL ALERT'
         text: |
           @everyone
           **🚨 CRITICAL SYSTEM ALERT 🚨**
@@ -95,18 +134,16 @@ receivers:
           
           {{ .Annotations.description }}
           
-          **🔍 Details:**
-          • Status: {{ .Status }}
+          **Details:**
           • Instance: {{ .Labels.instance }}
-          • Category: {{ .Labels.category }}
           • Started: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
           
-          **⚡ Action Required:** Immediate investigation needed!
+          **⚡ Action Required: Immediate investigation needed!**
           
           ---
           {{ end }}
 
-  - name: 'discord-warnings'
+  - name: 'discord-warning'
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
@@ -119,53 +156,26 @@ receivers:
           
           {{ .Annotations.description }}
           
-          **Details:**
-          • Instance: {{ .Labels.instance }}
-          • Category: {{ .Labels.category }}
-          • Time: {{ .StartsAt.Format "15:04:05" }}
-          
-          ---
-          {{ end }}
-
-  - name: 'discord-infrastructure'
-    webhook_configs:
-      - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
-        send_resolved: true
-        title: '🏗️ Infrastructure Alert'
-        text: |
-          **🏗️ Infrastructure Status Change**
-          
-          {{ range .Alerts }}
-          **{{ .Annotations.summary }}**
-          
-          {{ .Annotations.description }}
-          
-          **System Impact:** {{ .Labels.impact }}
           **Instance:** {{ .Labels.instance }}
+          **Time:** {{ .StartsAt.Format "15:04:05" }}
           
           ---
           {{ end }}
 
-# Inhibition rules - prevent alert spam
+# =============================================================================
+# INHIBIT RULES - Prevent alert spam
+# =============================================================================
 inhibit_rules:
-  # If a service is down, don't alert about resource usage
+  # If VPN VM is down, disable all other VPN VM alerts
+  - source_matchers:
+      - alertname="VPNNodeDown"
+    target_matchers:
+      - vm_type="vpn"
+    equal: ['instance']
+
+  # If there is a critical alert, disable warning alerts on the same instance
   - source_matchers:
       - severity="critical"
-      - category="infrastructure"
     target_matchers:
-      - category="resources"
-    equal: ['instance']
-
-  # If CPU is critical, don't alert about high CPU warnings
-  - source_matchers:
-      - alertname="CriticalCPUUsage"
-    target_matchers:
-      - alertname="HighCPUUsage"
-    equal: ['instance']
-
-  # If memory is critical, don't alert about high memory warnings  
-  - source_matchers:
-      - alertname="CriticalMemoryUsage"
-    target_matchers:
-      - alertname="HighMemoryUsage"
+      - severity="warning"
     equal: ['instance']
