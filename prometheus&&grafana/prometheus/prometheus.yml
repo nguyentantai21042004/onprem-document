@@ -70,3 +70,20 @@ scrape_configs:
     scrape_timeout: 10s
     metrics_path: '/metrics'
     scheme: 'http'
+
+  # =============================================================================
+  # VPN
+  # =============================================================================
+  - job_name: 'vpn-node'
+    static_configs:
+      - targets: ['192.168.1.210:9100']
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - target_label: vm_type
+        replacement: 'vpn'
+      - target_label: criticality
+        replacement: 'high'
