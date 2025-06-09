@@ -76,6 +76,7 @@ groups:
           severity: critical
           category: infrastructure
           impact: critical
+          vm_type: "vpn"
         annotations:
           summary: "🚨 VPN Service Down - Remote Access Disrupted"
           description: |

@@ -10,9 +10,7 @@ route:
   receiver: 'discord-general'
   
   routes:
-    # =============================================================================
-    # VPN ALERTS - First priority, send immediately
-    # =============================================================================
+    # VPN ALERTS - First priority
     - matchers:
         - vm_type="vpn"
         - severity="critical"
@@ -29,9 +27,7 @@ route:
       repeat_interval: 1h
       continue: false
 
-    # =============================================================================
     # GENERAL ALERTS
-    # =============================================================================
     - matchers:
         - severity="critical"
       receiver: 'discord-critical'
@@ -46,9 +42,7 @@ route:
       repeat_interval: 2h
       continue: false
 
-    # =============================================================================
     # PERIODIC REPORTS
-    # =============================================================================
     - matchers:
         - category="report"
       receiver: 'discord-reports'
@@ -57,30 +51,21 @@ route:
       continue: false
 
 receivers:
-  # =============================================================================
-  # VPN-SPECIFIC RECEIVERS - First priority
-  # =============================================================================
+  # VPN-SPECIFIC RECEIVERS
   - name: 'discord-vpn-critical'
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        title: '🚨 VPN CRITICAL - IMMEDIATE ACTION REQUIRED'
         text: |
-          **🚨 VPN INFRASTRUCTURE CRITICAL ALERT 🚨**
+          🚨 **VPN CRITICAL ALERT** 🚨
           
           {{ range .Alerts }}
           **{{ .Annotations.summary }}**
           
           {{ .Annotations.description }}
           
-          **🔍 VPN Details:**
-          • Instance: {{ .Labels.instance }}
-          • VM Type: {{ .Labels.vm_type }}
-          • Impact Level: {{ .Labels.impact }}
-          • Started: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          
-          **⚡ CRITICAL: VPN services may be unavailable!**
-          **🔧 Action: Check VM status immediately**
+          **Instance:** {{ .Labels.instance }}
+          **Started:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
           
           ---
           {{ end }}
@@ -89,42 +74,35 @@ receivers:
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        title: '⚠️ VPN Warning Alert'
         text: |
-          **⚠️ VPN Performance Warning**
+          ⚠️ **VPN Warning** 
           
           {{ range .Alerts }}
           **{{ .Annotations.summary }}**
           
           {{ .Annotations.description }}
           
-          **VPN Details:**
-          • Instance: {{ .Labels.instance }}
-          • Impact: {{ .Labels.impact }}
-          • Time: {{ .StartsAt.Format "15:04:05" }}
-          
-          💡 Monitor closely - may affect VPN performance
+          **Instance:** {{ .Labels.instance }}
+          **Time:** {{ .StartsAt.Format "15:04:05" }}
           
           ---
           {{ end }}
 
-  # =============================================================================
   # GENERAL RECEIVERS
-  # =============================================================================
   - name: 'discord-general'
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        title: '📊 Monitoring Alert'
         text: |
-          **📊 HOMELAB MONITORING**
+          📊 **Monitoring Alert**
           
           {{ range .Alerts }}
-          **Alert:** {{ .Annotations.summary }}
-          **Description:** {{ .Annotations.description }}
-          **Status:** {{ .Status }}
+          **{{ .Annotations.summary }}**
+          
+          {{ .Annotations.description }}
+          
           **Instance:** {{ .Labels.instance }}
-          **Time:** {{ .StartsAt.Format "15:04:05" }}
+          **Status:** {{ .Status }}
           
           ---
           {{ end }}
@@ -133,20 +111,16 @@ receivers:
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        title: '🚨 CRITICAL ALERT'
         text: |
-          **🚨 CRITICAL SYSTEM ALERT 🚨**
+          🚨 **CRITICAL ALERT** 🚨
           
           {{ range .Alerts }}
           **{{ .Annotations.summary }}**
           
           {{ .Annotations.description }}
           
-          **Details:**
-          • Instance: {{ .Labels.instance }}
-          • Started: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          
-          **⚡ Action Required: Immediate investigation needed!**
+          **Instance:** {{ .Labels.instance }}
+          **Started:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
           
           ---
           {{ end }}
@@ -155,9 +129,8 @@ receivers:
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: true
-        title: '⚠️ Warning Alert'
         text: |
-          **⚠️ System Warning**
+          ⚠️ **Warning Alert**
           
           {{ range .Alerts }}
           **{{ .Annotations.summary }}**
@@ -170,24 +143,20 @@ receivers:
           ---
           {{ end }}
 
-  # =============================================================================
-  # PERIODIC REPORTS RECEIVER
-  # =============================================================================
   - name: 'discord-reports'
     webhook_configs:
       - url: 'https://discord.com/api/webhooks/1378816244697796648/FlpeNbvNXObplrYfpAx_-AqznA8xDbdxUuqMrbWJ2EVqoLVs4CULGqUq4VKqaO2kGob0'
         send_resolved: false
-        title: '📊 Periodic Health Report'
         text: |
+          📊 **Health Report**
+          
           {{ range .Alerts }}
           {{ .Annotations.description }}
           
           ---
           {{ end }}
 
-# =============================================================================
-# INHIBIT RULES - Prevent alert spam
-# =============================================================================
+# INHIBIT RULES
 inhibit_rules:
   # If VPN VM is down, disable all other VPN VM alerts
   - source_matchers:
