@@ -12,15 +12,9 @@ echo "ZSH_CUSTOM: $ZSH_CUSTOM"
 sudo apt update
 sudo apt install zsh -y
 
-# Check zsh version
-zsh --version
-
-# Set zsh as default shell
-chsh -s $(which zsh)
-
 # Install Oh My Zsh
 if [ ! -d "$ACTUAL_HOME/.oh-my-zsh" ]; then
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"  
 fi
 
 # Install plugins
