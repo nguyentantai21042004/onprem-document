@@ -1,0 +1,672 @@
+def isContainerRunning(containerName) {
+    return sh(
+        script: "docker ps --filter name=${containerName} --format '{{.Names}}' | grep -q ${containerName}",
+        returnStatus: true
+    ) == 0
+}
+
+pipeline {
+    agent { label 'smap-api' }
+
+    parameters {
+        string(
+            name: 'TRIGGERED_BY',
+            defaultValue: 'manual',
+            description: 'Job that triggered this pipeline (auto-filled)'
+        )
+        choice(
+            name: 'MONITOR_TYPE',
+            choices: [
+                'post-deploy',
+                'health-check',
+                'error-diagnostic',
+                'manual-check',
+                'debug'
+            ],
+            description: 'Type of monitoring to perform'
+        )
+        choice(
+            name: 'MONITOR_DURATION',
+            choices: [
+                '1m', '3m', '5m', '10m', '15m'
+            ],
+            description: 'Monitoring duration (only applies to health-check)'
+        )
+        choice(
+            name: 'CONTAINER_TARGET',
+            choices: [
+                'both',
+                'smap-authenticate-api',
+                'smap-authenticate-consumer'
+            ],
+            description: 'Container to check'
+        )
+        booleanParam(
+            name: 'INCLUDE_SYSTEM_INFO',
+            defaultValue: true,
+            description: 'Include system information'
+        )
+        booleanParam(
+            name: 'GENERATE_HTML_REPORT',
+            defaultValue: true,
+            description: 'Generate beautiful HTML report'
+        )
+    }
+
+    stages {
+        stage('Initialize Monitoring') {
+            steps {
+                script {
+                    echo "🚀 Starting Log Monitoring Pipeline"
+                    echo "Triggered by: ${params.TRIGGERED_BY}"
+                    echo "Monitor type: ${params.MONITOR_TYPE}"
+                    echo "Target: ${params.CONTAINER_TARGET}"
+                    echo "Timestamp: ${new Date()}"
+
+                    // Determine the list of containers to check
+                    def containers = []
+                    if (params.CONTAINER_TARGET == 'both') {
+                        containers = [
+                            'smap-authenticate-api',
+                            'smap-authenticate-consumer'
+                        ]
+                    } else {
+                        containers = [params.CONTAINER_TARGET]
+                    }
+                    env.TARGET_CONTAINERS = containers.join(',')
+                    
+                    // Initialize global variables for HTML report
+                    env.HTML_CONTENT = ""
+                    env.CONTAINER_LOGS = ""
+                }
+            }
+        }
+
+        stage('Container Status Check') {
+            steps {
+                script {
+                    echo "🏥 Checking container status..."
+
+                    def containers = env.TARGET_CONTAINERS.split(',')
+                    def statusReport = [:]
+                    def hasIssues = false
+                    def htmlStatusContent = ""
+
+                    containers.each { containerName ->
+                        echo "\n🔸 Checking ${containerName}..."
+
+                        // Check if container is running
+                        def status = sh(
+                            script: "docker ps --filter name=${containerName} --format '{{.Status}}'",
+                            returnStdout: true
+                        ).trim()
+
+                        if (status) {
+                            echo "✅ ${containerName}: ${status}"
+                            statusReport[containerName] = status
+                            htmlStatusContent += "<tr class='success'><td>${containerName}</td><td>${status}</td>"
+                        } else {
+                            echo "❌ ${containerName}: Not running"
+                            statusReport[containerName] = "NOT_RUNNING"
+                            hasIssues = true
+                            htmlStatusContent += "<tr class='error'><td>${containerName}</td><td>NOT RUNNING</td>"
+                        }
+
+                        // Check restart count
+                        try {
+                            def restartCount = sh(
+                                script: "docker inspect ${containerName} --format='{{.RestartCount}}'",
+                                returnStdout: true
+                            ).trim()
+                            echo "🔄 Restart count: ${restartCount}"
+                            htmlStatusContent += "<td>${restartCount}</td></tr>"
+                        } catch (Exception e) {
+                            echo "⚠️ Could not get restart count for ${containerName}"
+                            htmlStatusContent += "<td>N/A</td></tr>"
+                        }
+                    }
+
+                    env.HAS_CONTAINER_ISSUES = hasIssues.toString()
+                    env.HTML_STATUS_CONTENT = htmlStatusContent
+
+                    if (hasIssues) {
+                        echo "⚠️ Some containers have issues - continuing with available containers"
+                    }
+                }
+            }
+        }
+
+        stage('System Information') {
+            when {
+                expression { params.INCLUDE_SYSTEM_INFO }
+            }
+            steps {
+                script {
+                    echo "💻 Collecting system information..."
+
+                    // Collect system info for HTML report
+                    def systemInfo = sh(
+                        script: '''
+                            echo "DOCKER_SYSTEM_DF:"
+                            docker system df
+                            echo "RESOURCE_USAGE:"
+                            docker stats --no-stream --format "table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}\\t{{.NetIO}}" $(docker ps --filter name=smap-authenticate --format "{{.Names}}" | tr '\\n' ' ') 2>/dev/null || echo "Cannot get stats"
+                            echo "DISK_USAGE:"
+                            df -h | grep -E "(Filesystem|/dev/)"
+                        ''',
+                        returnStdout: true
+                    )
+                    env.SYSTEM_INFO = systemInfo.replaceAll("'", "&#39;")
+
+                    sh '''
+                        echo "=== DOCKER SYSTEM INFO ==="
+                        docker system df
+                        echo ""
+
+                        echo "=== RESOURCE USAGE ==="
+                        docker stats --no-stream --format "table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}\\t{{.NetIO}}" $(docker ps --filter name=smap-authenticate --format "{{.Names}}" | tr '\\n' ' ') 2>/dev/null || echo "Cannot get stats"
+                        echo ""
+
+                        echo "=== DISK USAGE ==="
+                        df -h | grep -E "(Filesystem|/dev/)"
+                    '''
+                }
+            }
+        }
+
+        stage('Log Analysis') {
+            when {
+                expression { params.MONITOR_TYPE != 'debug' }
+            }
+            steps {
+                script {
+                    def containers = env.TARGET_CONTAINERS.split(',')
+                    def htmlLogsContent = ""
+
+                    switch (params.MONITOR_TYPE) {
+                        case 'post-deploy':
+                            echo "📋 POST-DEPLOYMENT LOG ANALYSIS"
+                            echo "=" * 50
+
+                            containers.each { containerName ->
+                                if (!isContainerRunning(containerName)) {
+                                    echo "⏭️ Skipping ${containerName} - not running"
+                                    htmlLogsContent += "<div class='container-section'><h3>${containerName} - NOT RUNNING</h3></div>"
+                                    return
+                                }
+
+                                echo "\n🔸 Analyzing ${containerName} post-deployment..."
+                                htmlLogsContent += "<div class='container-section'><h3>📋 ${containerName} - Post-Deploy Analysis</h3>"
+
+                                // Get logs for HTML
+                                def containerLogs = sh(
+                                    script: "docker logs --since 5m --tail 30 ${containerName} 2>&1",
+                                    returnStdout: true
+                                ).trim()
+
+                                if (containerLogs) {
+                                    htmlLogsContent += "<div class='log-content'><pre>${containerLogs.replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</pre></div>"
+                                } else {
+                                    htmlLogsContent += "<div class='no-logs'>No logs in the last 5 minutes</div>"
+                                }
+
+                                // Console output
+                                echo "--- Startup logs (last 5 minutes) ---"
+                                sh "docker logs --since 5m --tail 20 ${containerName} 2>&1"
+
+                                // Error check
+                                def errorCount = sh(
+                                    script: "docker logs --since 5m ${containerName} 2>&1 | grep -i 'error\\|exception\\|fail' | wc -l",
+                                    returnStdout: true
+                                ).trim()
+
+                                echo "❗ Error/Exception count (last 5 min): ${errorCount}"
+                                htmlLogsContent += "<div class='error-count'>Errors found: ${errorCount}</div>"
+
+                                if (errorCount.toInteger() > 0) {
+                                    echo "--- Recent errors ---"
+                                    sh "docker logs --since 5m ${containerName} 2>&1 | grep -i 'error\\|exception\\|fail' | tail -5"
+                                    
+                                    def recentErrors = sh(
+                                        script: "docker logs --since 5m ${containerName} 2>&1 | grep -i 'error\\|exception\\|fail' | tail -5",
+                                        returnStdout: true
+                                    ).trim()
+                                    htmlLogsContent += "<div class='error-logs'><h4>Recent Errors:</h4><pre>${recentErrors.replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</pre></div>"
+                                }
+
+                                htmlLogsContent += "</div>"
+                            }
+                            break
+
+                        case 'manual-check':
+                            echo "👤 MANUAL LOG CHECK"
+                            echo "=" * 50
+
+                            containers.each { containerName ->
+                                if (!isContainerRunning(containerName)) {
+                                    echo "⏭️ Skipping ${containerName} - not running"
+                                    htmlLogsContent += "<div class='container-section'><h3>${containerName} - NOT RUNNING</h3></div>"
+                                    return
+                                }
+
+                                echo "\n🔸 Manual check for ${containerName}..."
+                                htmlLogsContent += "<div class='container-section'><h3>👤 ${containerName} - Manual Check</h3>"
+
+                                // Get logs for HTML
+                                def containerLogs = sh(
+                                    script: "docker logs --tail 50 ${containerName} 2>&1",
+                                    returnStdout: true
+                                ).trim()
+
+                                if (containerLogs) {
+                                    htmlLogsContent += "<div class='log-content'><pre>${containerLogs.replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</pre></div>"
+                                } else {
+                                    htmlLogsContent += "<div class='no-logs'>No logs available</div>"
+                                }
+
+                                // Console output
+                                echo "--- Last 30 lines ---"
+                                sh "docker logs --tail 30 ${containerName}"
+
+                                // Summary
+                                def totalLines = sh(
+                                    script: "docker logs ${containerName} 2>&1 | wc -l",
+                                    returnStdout: true
+                                ).trim()
+
+                                def todayLines = sh(
+                                    script: "docker logs --since 24h ${containerName} 2>&1 | wc -l",
+                                    returnStdout: true
+                                ).trim()
+
+                                echo "📊 Log summary: ${totalLines} total lines, ${todayLines} lines today"
+                                htmlLogsContent += "<div class='log-summary'>📊 Total: ${totalLines} lines | Today: ${todayLines} lines</div></div>"
+                            }
+                            break
+
+                        case 'error-diagnostic':
+                            echo "🚨 ERROR DIAGNOSTIC MODE"
+                            echo "=" * 50
+
+                            containers.each { containerName ->
+                                echo "\n🔸 Diagnostic for ${containerName}..."
+                                htmlLogsContent += "<div class='container-section'><h3>🚨 ${containerName} - Error Diagnostic</h3>"
+
+                                // Get error logs for HTML
+                                def errorLogs = sh(
+                                    script: "docker logs --since 1h ${containerName} 2>&1 | grep -i 'error\\|exception\\|fail\\|fatal\\|panic' | tail -20",
+                                    returnStdout: true
+                                ).trim()
+
+                                if (errorLogs) {
+                                    htmlLogsContent += "<div class='error-logs'><h4>Errors (last 1 hour):</h4><pre>${errorLogs.replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</pre></div>"
+                                } else {
+                                    htmlLogsContent += "<div class='no-errors'>✅ No errors found in the last hour</div>"
+                                }
+
+                                // Console outputs
+                                echo "--- Errors in last 1 hour ---"
+                                sh "docker logs --since 1h ${containerName} 2>&1 | grep -i 'error\\|exception\\|fail\\|fatal\\|panic' | tail -10"
+
+                                echo "--- Last 20 log lines ---"
+                                sh "docker logs --tail 20 ${containerName} 2>&1"
+
+                                def lastLogs = sh(
+                                    script: "docker logs --tail 20 ${containerName} 2>&1",
+                                    returnStdout: true
+                                ).trim()
+                                htmlLogsContent += "<div class='log-content'><h4>Last 20 lines:</h4><pre>${lastLogs.replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</pre></div></div>"
+                            }
+                            break
+
+                        case 'health-check':
+                            echo "🏥 HEALTH CHECK MONITORING"
+                            echo "=" * 50
+                            echo "Monitoring for ${params.MONITOR_DURATION}..."
+                            htmlLogsContent += "<div class='container-section'><h3>🏥 Health Check Monitor (${params.MONITOR_DURATION})</h3><div class='health-monitoring'>Monitoring in progress...</div></div>"
+
+                            // Simplified health check script
+                            def monitorScript = """
+                                timeout ${params.MONITOR_DURATION} bash -c '
+                                    count=1
+                                    while true; do
+                                        echo "\\n=== Check #\$count - \$(date) ==="
+                                        ${containers.collect { containerName ->
+                                            """
+                                            echo "📊 ${containerName}:"
+                                            if docker ps --filter name=${containerName} --format "{{.Names}}" | grep -q ${containerName}; then
+                                                echo "  Status: Running"
+                                                recent_logs=\$(docker logs --tail 3 --since 1m ${containerName} 2>/dev/null | wc -l)
+                                                echo "  Recent activity: \$recent_logs log lines"
+                                                docker logs --tail 2 --since 1m ${containerName} 2>/dev/null | sed 's/^/  > /' || echo '  No recent logs'
+                                            else
+                                                echo "  Status: NOT RUNNING"
+                                            fi
+                                            """
+                                        }.join('\n')}
+                                        echo "\\n================================"
+                                        count=\$((count + 1))
+                                        sleep 60
+                                    done
+                                ' || echo "Health monitoring completed"
+                            """
+
+                            sh monitorScript
+                            break
+                    }
+
+                    env.HTML_LOGS_CONTENT = htmlLogsContent
+                }
+            }
+        }
+
+        stage('Generate HTML Report') {
+            when {
+                expression { params.GENERATE_HTML_REPORT }
+            }
+            steps {
+                script {
+                    def timestamp = new Date().format("yyyy-MM-dd HH:mm:ss")
+                    def htmlReport = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Log Monitor Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 15px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .section { 
+            margin-bottom: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .section h2 { 
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+            color: white; 
+            padding: 15px 20px; 
+            margin: 0;
+            font-size: 1.3em;
+        }
+        .section-content { padding: 20px; background: #f8f9fa; }
+        .container-section {
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+        .container-section h3 {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 15px;
+            margin: 0;
+            color: #2c3e50;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .log-content {
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .log-content pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .error-logs {
+            padding: 15px;
+            background: #fff5f5;
+            border-left: 4px solid #e53e3e;
+            border-radius: 0 8px 8px 0;
+        }
+        .error-logs pre {
+            background: #742a2a;
+            color: #fed7d7;
+        }
+        .no-logs, .no-errors {
+            padding: 20px;
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+            background: #edf2f7;
+            border-radius: 8px;
+        }
+        .no-errors {
+            background: #f0fff4;
+            color: #38a169;
+            border: 2px solid #c6f6d5;
+        }
+        .error-count, .log-summary {
+            padding: 10px 15px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .status-table th, .status-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .status-table th {
+            background: #6c757d;
+            color: white;
+            font-weight: 600;
+        }
+        .status-table tr.success {
+            background: #d4edda;
+        }
+        .status-table tr.error {
+            background: #f8d7da;
+        }
+        .system-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-line;
+        }
+        .footer {
+            background: #6c757d;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge-success { background: #28a745; color: white; }
+        .badge-warning { background: #ffc107; color: #212529; }
+        .badge-error { background: #dc3545; color: white; }
+        .health-monitoring {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐳 Container Log Monitor</h1>
+            <p>Generated on ${timestamp}</p>
+            <div>
+                <span class="badge badge-success">Monitor Type: ${params.MONITOR_TYPE}</span>
+                <span class="badge badge-success">Target: ${params.CONTAINER_TARGET}</span>
+                <span class="badge ${env.HAS_CONTAINER_ISSUES == 'true' ? 'badge-warning' : 'badge-success'}">
+                    Status: ${env.HAS_CONTAINER_ISSUES == 'true' ? 'Issues Detected' : 'All Good'}
+                </span>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>📊 Container Status</h2>
+                <div class="section-content">
+                    <table class="status-table">
+                        <thead>
+                            <tr>
+                                <th>Container Name</th>
+                                <th>Status</th>
+                                <th>Restart Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${env.HTML_STATUS_CONTENT ?: ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            ${params.INCLUDE_SYSTEM_INFO ? """
+            <div class="section">
+                <h2>💻 System Information</h2>
+                <div class="section-content">
+                    <div class="system-info">${env.SYSTEM_INFO ?: 'No system info available'}</div>
+                </div>
+            </div>
+            """ : ''}
+
+            <div class="section">
+                <h2>📋 Container Logs</h2>
+                <div class="section-content">
+                    ${env.HTML_LOGS_CONTENT ?: '<div class="no-logs">No logs analyzed in this run</div>'}
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Generated by Jenkins Pipeline | Triggered by: ${params.TRIGGERED_BY}</p>
+        </div>
+    </div>
+</body>
+</html>"""
+
+                    writeFile file: "container-log-report-${BUILD_NUMBER}.html", text: htmlReport
+                    
+                    echo "🎨 Beautiful HTML report generated!"
+                }
+            }
+        }
+
+        stage('Generate Text Report') {
+            steps {
+                script {
+                    echo "📊 Generating text monitoring report..."
+
+                    def reportFile = "log-monitor-report-${BUILD_NUMBER}.txt"
+                    def timestamp = new Date().format("yyyy-MM-dd HH:mm:ss")
+
+                    sh """
+                        cat > ${reportFile} << 'EOF'
+=== CONTAINER LOG MONITORING REPORT ===
+Timestamp: ${timestamp}
+Triggered by: ${params.TRIGGERED_BY}
+Monitor type: ${params.MONITOR_TYPE}
+Target containers: ${params.CONTAINER_TARGET}
+Duration: ${params.MONITOR_DURATION}
+
+=== CONTAINER STATUS ===
+EOF
+                        docker ps --filter name=smap-authenticate --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" >> ${reportFile}
+
+                        echo "" >> ${reportFile}
+                        echo "=== RESOURCE USAGE ===" >> ${reportFile}
+                        docker stats --no-stream --format "table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}" smap-authenticate-api smap-authenticate-consumer >> ${reportFile} 2>/dev/null || echo "Cannot get resource stats" >> ${reportFile}
+
+                        echo "" >> ${reportFile}
+                        echo "=== SUMMARY ===" >> ${reportFile}
+                        echo "Monitor completed successfully: \$(date)" >> ${reportFile}
+                        echo "Container issues detected: ${env.HAS_CONTAINER_ISSUES}" >> ${reportFile}
+                    """
+
+                    // Archive both reports
+                    archiveArtifacts artifacts: "*.html,*.txt", fingerprint: true
+                    echo "📋 Reports saved: HTML and text versions"
+                    
+                    // Set build description with link
+                    currentBuild.description = """
+                        <a href='artifact/container-log-report-${BUILD_NUMBER}.html' target='_blank'>
+                            📊 View HTML Report
+                        </a> | 
+                        Monitored: ${params.CONTAINER_TARGET} (${params.MONITOR_TYPE})
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo "🏁 Log monitoring completed"
+                if (params.TRIGGERED_BY != 'manual') {
+                    echo "Results will be available in the triggering job: ${params.TRIGGERED_BY}"
+                }
+                
+                if (params.GENERATE_HTML_REPORT) {
+                    echo "🎨 Beautiful HTML report available in artifacts!"
+                    echo "📱 Mobile-friendly and easy to read"
+                }
+            }
+        }
+        failure {
+            script {
+                echo "❌ Log monitoring failed"
+                currentBuild.description = "❌ Log monitoring failed for ${params.CONTAINER_TARGET}"
+            }
+        }
+        success {
+            script {
+                def status = env.HAS_CONTAINER_ISSUES == 'true' ? 'with warnings' : 'successfully'
+                echo "✅ Log monitoring completed ${status}"
+            }
+        }
+    }
+}
