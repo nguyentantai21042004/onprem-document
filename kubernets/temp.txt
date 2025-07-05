@@ -1,0 +1,79 @@
+File yaml cấu hình trong K8s
+
+Có hỗ trọ config bằng filel xml và json, nhưng ko thông dụng bằng yaml
+
+Các thành phần chính của cấu trúc yaml K8s
+1. apiVersion
+apiVersion: v1
+apiVersion: apps/v1
+apiVersion: batch/v1
+apiVersion: networking.k8s.io/v1
+apiVersion: policy/v1
+apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: autoscaling/v1
+apiVersion: storage.k8s.io/v1
+
+2. Kind: khai báo tài nguyên của K8s
+kind: Pod
+kind: Deployment
+kind: StatefulSet
+kind: DaemonSet
+kind: Service
+kind: Ingress
+kind: ConfigMap
+kind: Secret
+kind: PersistentVolume
+kind: PersistentVolumeClaim
+
+3. metadata
+metadata:
+    name:
+    namespace:
+    labels:
+    annotations:
+
+4. spec: mô tả chi tiết cấu hình
+
+namespace k8s
+Trong Kubernetes (K8s), Namespace là một cách tổ chức và phân
+tách các tài nguyên trong một cụm Kubernetes để quản lý tốt
+hơn. Nó được sử dụng để chia nhỏ tài nguyên của một cụm lớn
+thành các không gian làm việc logic nhỏ hơn, giúp dễ dàng quản
+lý và vận hành hơn.
+
+....
+
+   88  kubectl get no
+   89  clear
+   90  kubectl get no
+   91  clear
+   92  kubectl get no
+   93  clear
+   94  kubectl get pod
+   95  kubectl get pod --namespace default
+   96  kubectl get pod ns
+   97  kubectl get ns
+   98  clear
+   99  kubectl
+  100  clear
+  101  mkdir projects
+  102  ls
+  103  cd projects
+  104  ls
+  105  clear
+  106  mkdir dev
+  107  ls
+  108  cd dev
+  109  vi ns.yaml
+  110  clear
+  111  kubectl apply -f ns.yaml
+  112  claer
+  113  kubectl get ns
+  114  clear
+  115  lcear
+  116  vclear
+  117  clear
+  118  vi resourcequota.yaml
+  119  clear
+  120  ls
+  121  clear
