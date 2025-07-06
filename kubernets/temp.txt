@@ -1,1 +1,4 @@
 Chiến lược triển khai deployment
+
+
+NodePort: expose một port ra ngoài và có thể sử dụng từ bên ngoài (theo doc chính thức, range port là: [30.000,32.767])
