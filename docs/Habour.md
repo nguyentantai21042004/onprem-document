@@ -237,3 +237,91 @@ sudo docker-compose up -d
 cd /tools/harbor/harbor
 sudo docker-compose logs -f
 ```
+
+## Cách Harbor hoạt động
+
+### Kiến trúc Harbor
+
+Harbor được xây dựng trên Docker Compose với các thành phần chính sau:
+
+1. **Nginx (Proxy)**: Load balancer và reverse proxy
+2. **Harbor Core**: Thành phần chính xử lý API và web UI
+3. **Harbor Job Service**: Xử lý các công việc nền (replication, scanning, etc.)
+4. **Registry**: Docker registry lưu trữ images
+5. **Database (PostgreSQL)**: Lưu trữ metadata và cấu hình
+6. **Redis**: Cache và message queue
+7. **Harbor Log**: Thu thập logs từ các services
+
+### Luồng hoạt động
+
+1. **harbor.yml**: File cấu hình chính, định nghĩa certificate path và các thông số cơ bản
+2. **Script prepare**: Generate nginx.conf và map certificate từ host vào container
+3. **Container nginx**: Đọc certificate từ `/etc/cert/` bên trong container và xử lý HTTPS
+4. **Harbor Core**: Xử lý authentication, authorization và API requests
+5. **Registry**: Lưu trữ và phục vụ Docker images
+
+### Certificate Mapping
+
+Khi cấu hình SSL, Harbor sẽ mount certificate từ host vào container:
+
+```
+Host: /etc/harbor/ssl/harbor.crt  →  Container: /etc/cert/server.crt
+Host: /etc/harbor/ssl/harbor.key  →  Container: /etc/cert/server.key
+```
+
+### Workflow khi Pull/Push Image
+
+**Push Image:**
+1. Docker client gửi request đến nginx proxy
+2. Nginx forward request đến Harbor Core
+3. Harbor Core xác thực user và project permissions
+4. Request được chuyển đến Registry component
+5. Image được lưu trong data volume `/data`
+
+**Pull Image:**
+1. Docker client request image từ Harbor
+2. Harbor Core kiểm tra permissions
+3. Registry serve image từ storage
+4. Image được trả về cho client
+
+### Cấu hình Data Persistence
+
+Harbor lưu trữ dữ liệu trong các volume:
+- **Registry data**: `/data/registry` - Chứa Docker images
+- **Database data**: `/data/database` - PostgreSQL data
+- **Redis data**: `/data/redis` - Cache data
+- **Job logs**: `/var/log/harbor` - Service logs
+
+## Troubleshooting thường gặp
+
+**Lỗi SSL Certificate:**
+```bash
+# Kiểm tra certificate
+sudo openssl x509 -in /etc/harbor/ssl/harbor.crt -text -noout
+
+# Kiểm tra private key
+sudo openssl rsa -in /etc/harbor/ssl/harbor.key -check
+```
+
+**Harbor không start:**
+```bash
+# Kiểm tra Docker
+sudo systemctl status docker
+
+# Kiểm tra ports
+sudo netstat -tulpn | grep -E ':(80|443)\s'
+
+# Restart Harbor
+cd /tools/harbor/harbor
+sudo docker-compose down
+sudo docker-compose up -d
+```
+
+**Lỗi disk space:**
+```bash
+# Dọn dẹp Docker images không dùng
+sudo docker system prune -a
+
+# Kiểm tra disk usage
+df -h /data
+```
