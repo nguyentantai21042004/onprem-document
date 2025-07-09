@@ -22,7 +22,7 @@ if [ "$METHOD" = "1" ]; then
     echo "Enter webroot path (e.g., /var/www/html):"
     read WEBROOT
     sudo certbot certonly --webroot -w "$WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos -m $EMAIL
-elif ư[ "$METHOD" = "2" ]; then
+elif [ "$METHOD" = "2" ]; then
     sudo certbot certonly --standalone -d "$DOMAIN" --non-interactive --agree-tos -m $EMAIL --pre-hook "systemctl stop nginx" --post-hook "systemctl start nginx"
 else
     echo "Invalid method!"
