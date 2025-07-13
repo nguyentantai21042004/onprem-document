@@ -1,1 +1,17 @@
-Config Registry Harbor vs k8s
+INGRESS
+Ingress trong Kubernetes đóng vai trò là một API resource quản lý truy cập HTTP và HTTPS từ bên ngoài cluster vào các services bên trong.
+Vai trò chính của Ingress:
+Điểm truy cập thống nhất: Ingress hoạt động như một "cổng vào" duy nhất cho cluster, cho phép định tuyến traffic từ internet đến các services khác nhau dựa trên rules được định nghĩa.
+Load balancing và routing: Ingress có thể phân phối traffic đến nhiều services dựa trên hostname, path, hoặc các tiêu chí khác. Ví dụ:
+
+api.example.com → API service
+web.example.com → Web service
+example.com/api/* → API service
+example.com/admin/* → Admin service
+
+SSL/TLS termination: Ingress có thể xử lý việc mã hóa SSL/TLS, giúp các services bên trong không cần quan tâm đến certificates.
+Quản lý domain và subdomain: Thay vì phải expose nhiều LoadBalancer services (tốn kém), Ingress cho phép sử dụng một IP duy nhất để phục vụ nhiều domains/subdomains.
+Cách hoạt động:
+Ingress chỉ là một specification - để hoạt động thực sự, cần có Ingress Controller (như NGINX, Traefik, HAProxy) để implement các rules đã định nghĩa.
+Ingress giúp tiết kiệm chi phí và đơn giản hóa việc quản lý traffic vào cluster, đặc biệt hữu ích khi có nhiều services cần expose ra ngoài.
+
