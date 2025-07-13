@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tanca-bot-secret
+  namespace: discord-bot
+type: Opaque
+data:
+  BOT_TOKEN: "TVRNM09EQXlPRGM1TnpjNE5USTNOalUxTncuR1FEVnFsLk02Z3F5TkpROTFsMTFoak1MeHJjQUVRUlB5OHlLaTZ0MmhTUGxR"
+  
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tanca-bot-config
+  namespace: discord-bot
+data:
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "production"
+  TZ: "Asia/Ho_Chi_Minh"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tanca-bot
+  namespace: discord-bot
+  labels:
+    app: tanca-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tanca-bot
+  template:
+    metadata:
+      labels:
+        app: tanca-bot
+    spec:
+      imagePullSecrets:
+      - name: harbor-secret
+      
+      containers:
+      - name: tanca-bot
+        image: harbor.ngtantai.pro/discord-bot/tanca-shift:latest  # Use latest for auto-updates
+        imagePullPolicy: Always
+        
+        env:
+        - name: BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tanca-bot-secret
+              key: BOT_TOKEN
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: tanca-bot-config
+              key: LOG_LEVEL
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: tanca-bot-config
+              key: ENVIRONMENT
+        - name: TZ
+          valueFrom:
+            configMapKeyRef:
+              name: tanca-bot-config
+              key: TZ
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # FIXED: Better health checks that work with minimal containers
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f python > /dev/null || exit 1"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5  # More tolerant
+        
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f python > /dev/null || exit 1"
+          initialDelaySeconds: 15  # Give more time for bot to start
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # IMPROVED: More flexible security context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # Discord bots need write access for logs
+          capabilities:
+            drop:
+            - ALL
+        
+        # OPTIONAL: Add startup probe for slower starting applications
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f python > /dev/null || exit 1"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12  # Give up to 60 seconds to start (12 * 5s)
+      
+      restartPolicy: Always
+      
+      securityContext:
+        fsGroup: 1000
