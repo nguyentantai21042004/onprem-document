@@ -1,299 +1,484 @@
-# 02-services - Core Services Setup
+# Hướng Dẫn Triển Khai Services
 
-## Overview
+## 📋 Tổng Quan
 
-This section covers the setup and configuration of core services that form the backbone of your on-premise server infrastructure. These services provide essential functionality including VPN access, database storage, container registry, and comprehensive monitoring.
+Phần này cung cấp tài liệu toàn diện để triển khai các dịch vụ cốt lõi trên infrastructure on-premise của bạn. Các hướng dẫn bao gồm VPN, databases, container registry, và monitoring stack hoàn chỉnh.
 
-## Services Included
-
-### 🔐 VPN Server
-- **Purpose**: Secure remote access to your infrastructure
-- **Technology**: OpenVPN with OVPM management
-- **Features**: Web-based management, user provisioning, certificate management
-- **Documentation**: [VPN Server Setup](vpn-server.md)
-
-### 🗄️ Database Services
-- **MongoDB Replica Set**: High-availability NoSQL database cluster
-- **PostgreSQL with Repmgr**: Relational database with automatic failover
-- **Features**: Clustering, replication, backup strategies, monitoring
-- **Documentation**: [MongoDB Setup](database-mongodb.md) | [PostgreSQL Setup](database-postgresql.md)
-
-### 🐳 Container Registry
-- **Purpose**: Private Docker image registry with security scanning
-- **Technology**: Harbor with Trivy integration
-- **Features**: RBAC, vulnerability scanning, Helm chart storage
-- **Documentation**: [Container Registry Setup](container-registry.md)
-
-### 📊 Monitoring Stack
-- **Purpose**: Comprehensive infrastructure and application monitoring
-- **Technology**: Prometheus, Grafana, Alertmanager
-- **Features**: Metrics collection, visualization, alerting, dashboards
-- **Documentation**: [Monitoring Setup](monitoring-setup.md)
-
----
-
-## Architecture Overview
+## 🏗️ Tổng Quan Kiến Trúc
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Services Layer                          │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                  VPN Services                           │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │ │
-│  │  │   OpenVPN   │  │    OVPM     │  │  Web Portal │     │ │
-│  │  │   Server    │  │  Manager    │  │   :943      │     │ │
-│  │  │   :1194     │  │   :8080     │  │             │     │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                Database Services                        │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │ │
-│  │  │  MongoDB    │  │  MongoDB    │  │  MongoDB    │     │ │
-│  │  │  Primary    │  │ Secondary   │  │ Secondary   │     │ │
-│  │  │   :27017    │  │   :27017    │  │   :27017    │     │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     │ │
-│  │                                                         │ │
-│  │  ┌─────────────┐  ┌─────────────┐                      │ │
-│  │  │PostgreSQL   │  │PostgreSQL   │                      │ │
-│  │  │  Primary    │  │   Standby   │                      │ │
-│  │  │   :5432     │  │   :5432     │                      │ │
-│  │  └─────────────┘  └─────────────┘                      │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │              Container Registry                         │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │ │
-│  │  │   Harbor    │  │   Trivy     │  │  Chartmuseum│     │ │
-│  │  │   Core      │  │  Scanner    │  │    Helm     │     │ │
-│  │  │   :443      │  │   :8080     │  │   Charts    │     │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │               Monitoring Stack                          │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │ │
-│  │  │ Prometheus  │  │   Grafana   │  │Alertmanager │     │ │
-│  │  │   :9090     │  │   :3000     │  │   :9093     │     │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      Tầng Services                              │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Bảo mật & VPN                         │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
+│  │  │  OpenVPN    │  │    OVPM     │  │  Web GUI    │     │   │
+│  │  │   Server    │  │ Management  │  │ Interface   │     │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                 │
+│                              ▼                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                 Cơ sở Dữ liệu                           │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
+│  │  │   MongoDB   │  │ PostgreSQL  │  │ High Avail  │     │   │
+│  │  │ Replica Set │  │   Repmgr    │  │ Clustering  │     │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                 │
+│                              ▼                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Container Registry                         │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
+│  │  │   Harbor    │  │ Image Scan  │  │   Helm      │     │   │
+│  │  │  Registry   │  │   Trivy     │  │  Charts     │     │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                 │
+│                              ▼                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Monitoring Stack                           │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
+│  │  │ Prometheus  │  │   Grafana   │  │Alertmanager │     │   │
+│  │  │  Metrics    │  │ Dashboards  │  │   Alerts    │     │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
----
+## 📚 Cấu Trúc Tài Liệu
 
-## Implementation Order
+### 1. [VPN Server](vpn-server.md)
+**Tầng Bảo mật - Truy cập An toàn**
+- ✅ Cài đặt OpenVPN server với OVPM tool
+- ✅ Web interface cho user management
+- ✅ Certificate management tự động
+- ✅ User authentication và authorization
+- ✅ Network routing và firewall configuration
+- ✅ Performance tuning và monitoring
 
-### Phase 1: VPN Setup (Priority: High)
-1. **Start with VPN Server** - Essential for secure remote access
-2. **Configure OpenVPN** - Basic VPN functionality
-3. **Setup OVPM** - Web-based management interface
-4. **Test connectivity** - Verify remote access works
+**Yêu cầu tiên quyết**: Ubuntu server với public IP
 
-### Phase 2: Database Services (Priority: High)
-1. **MongoDB Replica Set** - NoSQL database cluster
-2. **PostgreSQL with Repmgr** - SQL database with HA
-3. **Configure replication** - Ensure data redundancy
-4. **Setup backup strategies** - Data protection
+### 2. [MongoDB Database](database-mongodb.md)
+**Tầng Dữ liệu - NoSQL High Availability**
+- ✅ MongoDB replica set với 3 nodes
+- ✅ Automatic failover và recovery
+- ✅ Data replication và consistency
+- ✅ Backup strategies và restore procedures
+- ✅ Performance monitoring và optimization
+- ✅ Security hardening và authentication
 
-### Phase 3: Container Registry (Priority: Medium)
-1. **Harbor installation** - Private registry setup
-2. **SSL configuration** - Secure registry access
-3. **User management** - RBAC implementation
-4. **Integration testing** - Docker push/pull operations
+**Yêu cầu tiên quyết**: 3 Ubuntu servers cho HA setup
 
-### Phase 4: Monitoring Stack (Priority: Medium)
-1. **Prometheus setup** - Metrics collection
-2. **Grafana configuration** - Dashboard creation
-3. **Alertmanager setup** - Notification system
-4. **Exporter deployment** - Metrics from all services
+### 3. [PostgreSQL Database](database-postgresql.md)
+**Tầng Dữ liệu - SQL High Availability**
+- ✅ PostgreSQL primary-standby với repmgr
+- ✅ Automatic failover với witness node
+- ✅ Streaming replication configuration
+- ✅ Connection pooling với pgbouncer
+- ✅ Backup automation với pg_dump
+- ✅ Performance tuning và monitoring
 
----
+**Yêu cầu tiên quyết**: 3 Ubuntu servers cho cluster setup
 
-## Service Dependencies
+### 4. [Harbor Container Registry](container-registry.md)
+**Tầng Container - Image Management**
+- ✅ Harbor installation với Docker Compose
+- ✅ RBAC và project management
+- ✅ Container image vulnerability scanning
+- ✅ Helm chart repository support
+- ✅ Docker registry API compatibility
+- ✅ Integration với Kubernetes clusters
 
-### VPN Server
-- **Dependencies**: None (standalone service)
-- **Ports**: 1194 (OpenVPN), 943 (Web UI), 8080 (OVPM)
-- **Integrates with**: All services (provides access)
+**Yêu cầu tiên quyết**: Docker và Docker Compose
 
-### Database Services
-- **Dependencies**: Network connectivity between nodes
-- **Ports**: 27017 (MongoDB), 5432 (PostgreSQL)
-- **Integrates with**: Applications, monitoring
+### 5. [Monitoring Setup](monitoring-setup.md)
+**Tầng Giám sát - Observability Stack**
+- ✅ Prometheus cho metrics collection
+- ✅ Grafana dashboards và visualization
+- ✅ Alertmanager cho notification routing
+- ✅ Node Exporter cho system metrics
+- ✅ Custom dashboards cho services
+- ✅ Alert rules và notification channels
 
-### Container Registry
-- **Dependencies**: Docker, SSL certificates
-- **Ports**: 80 (HTTP), 443 (HTTPS)
-- **Integrates with**: CI/CD, Kubernetes, monitoring
+**Yêu cầu tiên quyết**: Services đã deployed để monitor
 
-### Monitoring Stack
-- **Dependencies**: All services (for monitoring)
-- **Ports**: 9090 (Prometheus), 3000 (Grafana), 9093 (Alertmanager)
-- **Integrates with**: All services, notification systems
+## 🎯 Lộ Trình Triển Khai
 
----
+### Giai đoạn 1: Dịch vụ Cốt lõi (Ngày 1-2)
+1. **Bảo mật** → [vpn-server.md](vpn-server.md) - Thiết lập truy cập an toàn
+2. **Database** → [database-mongodb.md](database-mongodb.md) - NoSQL cho applications
+3. **Database** → [database-postgresql.md](database-postgresql.md) - SQL cho structured data
+4. **Registry** → [container-registry.md](container-registry.md) - Container image storage
 
-## Configuration Files
+**Thời gian ước tính**: 1-2 ngày
+**Cấp độ kỹ năng**: Trung cấp
 
-### VPN Server
-- `ovpn-server.conf` - OpenVPN server configuration
-- `ovpm.conf` - OVPM management configuration
-- `client.ovpn` - Client configuration template
+### Giai đoạn 2: Monitoring & Optimization (Ngày 3)
+1. **Monitoring** → [monitoring-setup.md](monitoring-setup.md) - Full observability stack
+2. **Integration** → Tích hợp tất cả services với monitoring
+3. **Testing** → Load testing và performance validation
+4. **Documentation** → Hoàn thiện operational procedures
 
-### Database Services
-- `mongod.conf` - MongoDB configuration
-- `postgresql.conf` - PostgreSQL configuration
-- `repmgr.conf` - Repmgr configuration
+**Thời gian ước tính**: 1 ngày
+**Cấp độ kỹ năng**: Nâng cao
 
-### Container Registry
-- `harbor.yml` - Harbor configuration
-- `docker-compose.yml` - Container orchestration
+### Giai đoạn 3: Production Ready (Ongoing)
+1. **Security** → Hardening tất cả services
+2. **Backup** → Automated backup strategies
+3. **Scaling** → Horizontal scaling configuration
+4. **Optimization** → Performance tuning
 
-### Monitoring Stack
-- `prometheus.yml` - Prometheus configuration
-- `grafana.ini` - Grafana configuration
-- `alertmanager.yml` - Alertmanager configuration
+**Thời gian ước tính**: Ongoing
+**Cấp độ kỹ năng**: Expert
 
----
+## 🚀 Tham Khảo Nhanh
 
-## Security Considerations
+### Địa chỉ IP Services
+```bash
+# VPN Server
+VPN_SERVER="192.168.1.201"
 
-### Access Control
-- **VPN**: Certificate-based authentication
-- **Databases**: Role-based access control
-- **Registry**: RBAC with project isolation
-- **Monitoring**: Basic authentication with secure passwords
+# MongoDB Replica Set
+MONGO_PRIMARY="192.168.1.20"
+MONGO_SECONDARY_1="192.168.1.21"  
+MONGO_SECONDARY_2="192.168.1.22"
 
-### Network Security
-- **Firewall**: UFW rules for each service
-- **SSL/TLS**: Encrypted communication
-- **VPN**: Secure tunneling for remote access
+# PostgreSQL Cluster
+PG_PRIMARY="192.168.1.202"
+PG_STANDBY="192.168.1.203"
+PG_WITNESS="192.168.1.204"
 
-### Data Protection
-- **Databases**: Encryption at rest and in transit
-- **Registry**: Image vulnerability scanning
-- **Monitoring**: Secure metrics collection
+# Harbor Registry
+HARBOR_SERVER="192.168.1.205"
 
----
-
-## Monitoring Integration
-
-Each service includes monitoring integration:
-
-### Metrics Collection
-- **Node Exporter**: System metrics for all VMs
-- **Database Exporters**: MongoDB and PostgreSQL metrics
-- **Harbor Metrics**: Registry-specific metrics
-- **Custom Metrics**: Application-specific measurements
-
-### Alerting Rules
-- **System Alerts**: CPU, memory, disk usage
-- **Service Alerts**: Database replication, VPN connectivity
-- **Security Alerts**: Failed authentication attempts
-- **Performance Alerts**: Response time degradation
-
-### Dashboards
-- **System Overview**: Infrastructure-wide metrics
-- **Database Dashboard**: Database-specific metrics
-- **Service Health**: Application status monitoring
-- **Network Dashboard**: VPN and connectivity metrics
-
----
-
-## Backup and Recovery
-
-### VPN Server
-- **Configuration backup**: OpenVPN and OVPM configs
-- **Certificate backup**: CA and client certificates
-- **User data backup**: User profiles and settings
-
-### Database Services
-- **Automated backups**: Daily database dumps
-- **Replication**: Real-time data synchronization
-- **Point-in-time recovery**: Transaction log archiving
-
-### Container Registry
-- **Image backup**: Registry storage backup
-- **Configuration backup**: Harbor settings
-- **Database backup**: Registry metadata
-
-### Monitoring Stack
-- **Metrics backup**: Prometheus data export
-- **Dashboard backup**: Grafana dashboard exports
-- **Configuration backup**: All service configs
-
----
-
-## Troubleshooting
-
-### Common Issues
-1. **Service connectivity**: Network and firewall configuration
-2. **Authentication failures**: Certificate and password issues
-3. **Resource constraints**: CPU, memory, and disk limitations
-4. **Configuration errors**: Syntax and parameter validation
-
-### Debug Tools
-- **Log analysis**: Centralized logging with monitoring
-- **Network testing**: Connectivity verification tools
-- **Performance monitoring**: Resource usage tracking
-- **Health checks**: Service status validation
-
-### Support Resources
-- **Documentation**: Comprehensive setup guides
-- **Community**: Open-source project communities
-- **Professional support**: Enterprise support options
-
----
-
-## Next Steps
-
-After completing the 02-services setup:
-
-1. **Proceed to 03-kubernetes**: Container orchestration setup
-2. **Implement 04-cicd**: Continuous integration/deployment
-3. **Configure integrations**: Service-to-service communication
-4. **Security hardening**: Advanced security configurations
-5. **Performance optimization**: Tuning for production workloads
-
----
-
-## Quick Reference
+# Monitoring Stack
+PROMETHEUS_SERVER="192.168.1.206"
+GRAFANA_SERVER="192.168.1.207"
+```
 
 ### Service URLs
-- **VPN Management**: `https://192.168.1.210:943`
-- **OVPM Interface**: `http://192.168.1.210:8080`
-- **Harbor Registry**: `https://registry.ngtantai.pro`
-- **Grafana Dashboard**: `http://192.168.1.100:3000`
-- **Prometheus**: `http://192.168.1.100:9090`
+```bash
+# VPN Management
+https://192.168.1.201:8080  # OVPM Web Interface
 
-### Default Credentials
-- **VPN Admin**: `admin` / `configured_password`
-- **Harbor Admin**: `admin` / `Harbor12345`
-- **Grafana**: `admin` / `admin123`
-- **Database**: As configured during setup
+# Databases
+mongodb://192.168.1.20:27017,192.168.1.21:27017,192.168.1.22:27017
+postgresql://192.168.1.202:5432
+
+# Container Registry  
+https://harbor.ngtantai.pro  # Harbor Web UI
+docker login harbor.ngtantai.pro
+
+# Monitoring
+https://192.168.1.206:9090   # Prometheus
+https://192.168.1.207:3000   # Grafana
+https://192.168.1.206:9093   # Alertmanager
+```
 
 ### Health Check Commands
 ```bash
-# VPN connectivity
-ping 192.168.1.210
+# VPN Server Status
+systemctl status openvpn-server@server
+curl -k https://192.168.1.201:8080/api/status
 
-# Database connectivity
-mongosh --host 192.168.1.20 --port 27017
-psql -h 192.168.1.202 -U postgres
+# MongoDB Cluster Status
+mongo --host rs0/192.168.1.20:27017,192.168.1.21:27017,192.168.1.22:27017 \
+  --eval "rs.status()"
 
-# Registry connectivity
-docker login registry.ngtantai.pro
+# PostgreSQL Cluster Status
+repmgr -f /etc/repmgr.conf cluster show
 
-# Monitoring services
-curl http://192.168.1.100:9090/-/healthy
+# Harbor Registry Status
+curl -k https://harbor.ngtantai.pro/api/v2.0/health
+
+# Monitoring Stack Status
+curl http://192.168.1.206:9090/-/healthy
+curl http://192.168.1.207:3000/api/health
 ```
+
+## 🔧 Service Endpoints
+
+### VPN Server Configuration
+```bash
+# OpenVPN Client Configuration
+client
+dev tun
+proto udp
+remote vpn.ngtantai.pro 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+ca ca.crt
+cert client.crt
+key client.key
+cipher AES-256-CBC
+auth SHA256
+verb 3
+```
+
+### Database Connections
+```javascript
+// MongoDB Connection String
+const mongoUri = "mongodb://username:password@192.168.1.20:27017,192.168.1.21:27017,192.168.1.22:27017/database_name?replicaSet=rs0";
+
+// PostgreSQL Connection
+const pgConfig = {
+  host: '192.168.1.202',
+  port: 5432,
+  database: 'app_database',
+  user: 'app_user',
+  password: 'secure_password',
+  ssl: true
+};
+```
+
+### Container Registry Usage
+```bash
+# Login to Harbor
+docker login harbor.ngtantai.pro
+Username: admin
+Password: Harbor12345
+
+# Push image to Harbor
+docker tag myapp:latest harbor.ngtantai.pro/myproject/myapp:latest
+docker push harbor.ngtantai.pro/myproject/myapp:latest
+
+# Pull image from Harbor
+docker pull harbor.ngtantai.pro/myproject/myapp:latest
+```
+
+## 🏆 Checklist Validation
+
+### VPN Server
+- [ ] OpenVPN server đang chạy
+- [ ] OVPM web interface accessible
+- [ ] Client certificates generated
+- [ ] Network routing configured
+- [ ] Firewall rules applied
+- [ ] User authentication working
+
+### MongoDB Cluster
+- [ ] 3 nodes cluster deployed
+- [ ] Replica set configuration active
+- [ ] Primary/secondary roles assigned
+- [ ] Automatic failover tested
+- [ ] Backup procedures configured
+- [ ] Monitoring alerts setup
+
+### PostgreSQL Cluster  
+- [ ] Primary-standby replication working
+- [ ] Repmgr automatic failover configured
+- [ ] Connection pooling active
+- [ ] Backup automation working
+- [ ] Performance monitoring enabled
+- [ ] Security hardening applied
+
+### Harbor Registry
+- [ ] Harbor web interface accessible
+- [ ] Project và user management configured
+- [ ] Container scanning enabled
+- [ ] RBAC policies applied
+- [ ] Helm chart repository working
+- [ ] Integration với Docker tested
+
+### Monitoring Stack
+- [ ] Prometheus collecting metrics
+- [ ] Grafana dashboards configured
+- [ ] Alertmanager routing notifications
+- [ ] All services monitored
+- [ ] Alert rules configured
+- [ ] Notification channels tested
+
+## 🔗 Điểm Tích hợp
+
+### Với Tầng Infrastructure
+- Network configuration từ infrastructure setup
+- VM placement và resource allocation
+- Security certificates và domain setup
+- Storage configuration cho data persistence
+
+### Với Tầng Kubernetes
+- Container images từ Harbor registry
+- Database connections cho applications
+- VPN access cho cluster management
+- Monitoring integration cho K8s metrics
+
+### Với Tầng CI/CD
+- Harbor registry cho container storage
+- Database setup cho application data
+- VPN cho secure CI/CD access
+- Monitoring cho pipeline health
+
+## 📈 Tối Ưu Performance
+
+### Database Optimization
+```sql
+-- PostgreSQL Performance Tuning
+shared_buffers = 256MB
+effective_cache_size = 1GB
+work_mem = 4MB
+maintenance_work_mem = 64MB
+checkpoint_completion_target = 0.7
+wal_buffers = 16MB
+```
+
+```javascript
+// MongoDB Performance Settings
+db.adminCommand({
+  setParameter: 1,
+  wiredTigerConcurrentReadTransactions: 128,
+  wiredTigerConcurrentWriteTransactions: 128
+});
+```
+
+### Container Registry Optimization
+```yaml
+# Harbor Performance Configuration
+storage:
+  cache:
+    blobdescriptor: redis
+    blobdescriptorsize: 10000
+  redirect:
+    disable: true
+```
+
+### Monitoring Optimization
+```yaml
+# Prometheus Configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  
+rule_files:
+  - "alert_rules.yml"
+  
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+```
+
+## 🔐 Best Practices Bảo mật
+
+### Network Security
+```bash
+# UFW Firewall Rules
+ufw allow from 192.168.1.0/24 to any port 27017  # MongoDB
+ufw allow from 192.168.1.0/24 to any port 5432   # PostgreSQL
+ufw allow 443/tcp                                 # HTTPS Harbor
+ufw allow 1194/udp                                # OpenVPN
+```
+
+### Database Security
+```sql
+-- PostgreSQL Security
+CREATE USER app_user WITH PASSWORD 'strong_password';
+GRANT CONNECT ON DATABASE app_db TO app_user;
+GRANT USAGE ON SCHEMA public TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+```
+
+```javascript
+// MongoDB Security
+use admin
+db.createUser({
+  user: "app_user",
+  pwd: "strong_password", 
+  roles: [
+    { role: "readWrite", db: "app_database" }
+  ]
+});
+```
+
+### Container Security
+```yaml
+# Harbor Security Configuration
+registry:
+  auth:
+    token:
+      issuer: harbor-token-issuer
+      service: harbor-registry
+  validation:
+    disabled: false
+security:
+  checkov: true
+  trivy: true
+```
+
+## 📞 Hỗ trợ và Troubleshooting
+
+### Vấn đề Thường gặp
+
+#### 1. VPN Connection Issues
+```bash
+# Check OpenVPN logs
+journalctl -u openvpn-server@server -f
+
+# Test VPN connectivity
+ping 10.8.0.1
+traceroute 10.8.0.1
+```
+
+#### 2. Database Connection Problems
+```bash
+# MongoDB connectivity
+mongo --host 192.168.1.20:27017 --eval "db.runCommand('ping')"
+
+# PostgreSQL connectivity  
+psql -h 192.168.1.202 -U postgres -c "SELECT version();"
+```
+
+#### 3. Harbor Registry Issues
+```bash
+# Check Harbor services
+docker-compose -f harbor.yml ps
+docker-compose -f harbor.yml logs harbor-core
+```
+
+#### 4. Monitoring Problems
+```bash
+# Check Prometheus targets
+curl http://localhost:9090/api/v1/targets
+
+# Verify Grafana datasource
+curl -X GET http://admin:admin@localhost:3000/api/datasources
+```
+
+### Recovery Procedures
+
+#### Database Recovery
+```bash
+# MongoDB Replica Set Recovery
+mongo --host 192.168.1.20:27017 --eval "rs.stepDown()"
+mongo --host 192.168.1.21:27017 --eval "rs.slaveOk(); rs.status()"
+
+# PostgreSQL Failover
+repmgr -f /etc/repmgr.conf standby promote
+repmgr -f /etc/repmgr.conf cluster show
+```
+
+#### Service Recovery
+```bash
+# Restart critical services
+systemctl restart openvpn-server@server
+systemctl restart mongod
+systemctl restart postgresql
+docker-compose -f harbor.yml restart
+```
+
+## 🎯 Bước Tiếp theo
+
+Sau khi hoàn thành phần Services này, tiếp tục với:
+1. **[03-Kubernetes](../03-kubernetes/index.md)** - Container orchestration platform
+2. **[04-CI/CD](../04-cicd/index.md)** - Automated deployment pipelines
+3. **[05-Config-Templates](../05-config-templates/index.md)** - Ready-to-use configurations
 
 ---
 
-## Conclusion
+**Lưu ý**: Services là trái tim của infrastructure. Đảm bảo tất cả services hoạt động ổn định và có monitoring đầy đủ trước khi triển khai Kubernetes.
 
-The 02-services layer provides the essential infrastructure services needed for a complete on-premise server setup. Each service is designed to be highly available, secure, and well-monitored. The modular approach allows for independent deployment and scaling of each component.
-
-Follow the documentation for each service to ensure proper configuration and integration. The monitoring stack provides visibility into all services, enabling proactive maintenance and troubleshooting. 
+**Triết lý**: **Dịch vụ Ổn định → Dữ liệu An toàn → Giám sát Toàn diện → Tự động hóa Thông minh** 
