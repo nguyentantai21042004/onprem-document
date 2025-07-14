@@ -1,80 +1,80 @@
-# MongoDB Replica Set Setup
+# Thiết Lập MongoDB Replica Set
 
-## Table of Contents
+## Mục Lục
 
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Architecture Overview](#architecture-overview)
-- [Installation Guide](#installation-guide)
-- [Configuration](#configuration)
-- [Replica Set Management](#replica-set-management)
-- [Security Best Practices](#security-best-practices)
-- [Monitoring and Maintenance](#monitoring-and-maintenance)
-- [Troubleshooting](#troubleshooting)
-- [Integration with Other Services](#integration-with-other-services)
-
----
-
-## Introduction
-
-MongoDB Replica Set is a group of MongoDB instances that maintain the same dataset, providing redundancy and high availability. This is the foundation for all production MongoDB deployments.
-
-### What is a Replica Set?
-
-A replica set is a group of MongoDB processes that maintain the same dataset. It consists of:
-
-- **Primary Node**: Receives all write operations
-- **Secondary Nodes**: Replicate data from the Primary
-- **Arbiter** (optional): Participates in elections but doesn't store data
-
-### Key Benefits
-
-1. **High Availability**
-   - Automatic failover when Primary fails
-   - Applications can continue without interruption
-
-2. **Data Redundancy**
-   - Data replicated across multiple servers
-   - Protection against hardware failures
-
-3. **Read Scalability**
-   - Read operations can be distributed to Secondary nodes
-   - Improved performance for read-heavy workloads
-
-4. **Disaster Recovery**
-   - Automatic backup through replication
-   - Point-in-time recovery capabilities
+- [Giới Thiệu](#giới-thiệu)
+- [Yêu Cầu Tiên Quyết](#yêu-cầu-tiên-quyết)
+- [Tổng Quan Kiến Trúc](#tổng-quan-kiến-trúc)
+- [Hướng Dẫn Cài Đặt](#hướng-dẫn-cài-đặt)
+- [Cấu Hình](#cấu-hình)
+- [Quản Lý Replica Set](#quản-lý-replica-set)
+- [Thực Hành Bảo Mật Tốt Nhất](#thực-hành-bảo-mật-tốt-nhất)
+- [Giám Sát và Bảo Trì](#giám-sát-và-bảo-trì)
+- [Khắc Phục Sự Cố](#khắc-phục-sự-cố)
+- [Tích Hợp với Các Dịch Vụ Khác](#tích-hợp-với-các-dịch-vụ-khác)
 
 ---
 
-## Prerequisites
+## Giới Thiệu
 
-### Hardware Requirements
+MongoDB Replica Set là một nhóm các instance MongoDB duy trì cùng một tập dữ liệu, cung cấp tính dự phòng và khả năng sẵn sàng cao. Đây là nền tảng cho tất cả các triển khai MongoDB production.
 
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
+### Replica Set là gì?
+
+Replica Set là một nhóm các tiến trình MongoDB duy trì cùng một tập dữ liệu. Nó bao gồm:
+
+- **Primary Node**: Nhận tất cả các thao tác ghi
+- **Secondary Nodes**: Sao chép dữ liệu từ Primary
+- **Arbiter** (tùy chọn): Tham gia bầu cử nhưng không lưu trữ dữ liệu
+
+### Lợi Ích Chính
+
+1. **Khả Năng Sẵn Sàng Cao**
+   - Tự động chuyển đổi dự phòng khi Primary lỗi
+   - Ứng dụng có thể tiếp tục hoạt động không bị gián đoạn
+
+2. **Dự Phòng Dữ Liệu**
+   - Dữ liệu được sao chép trên nhiều máy chủ
+   - Bảo vệ chống lỗi phần cứng
+
+3. **Khả Năng Mở Rộng Đọc**
+   - Các thao tác đọc có thể được phân phối đến các node Secondary
+   - Cải thiện hiệu suất cho khối lượng công việc đọc nhiều
+
+4. **Khôi Phục Thảm Họa**
+   - Sao lưu tự động thông qua replication
+   - Khả năng khôi phục point-in-time
+
+---
+
+## Yêu Cầu Tiên Quyết
+
+### Yêu Cầu Phần Cứng
+
+| Thành Phần | Tối Thiểu | Khuyến Nghị |
+|------------|-----------|-------------|
 | **CPU** | 2 cores | 4 cores |
 | **RAM** | 4GB | 8GB |
 | **Storage** | 50GB SSD | 100GB+ SSD |
 | **Network** | 1 Gbps | 1 Gbps |
 
-### Software Requirements
+### Yêu Cầu Phần Mềm
 
 - **OS**: Ubuntu 22.04 LTS
-- **MongoDB**: 7.0 or later
-- **Network**: Static IP addresses for all nodes
+- **MongoDB**: 7.0 hoặc mới hơn
+- **Network**: Địa chỉ IP tĩnh cho tất cả các node
 
-### Network Configuration
+### Cấu Hình Mạng
 
-| Node | IP Address | Role |
-|------|------------|------|
+| Node | Địa Chỉ IP | Vai Trò |
+|------|------------|---------|
 | VM1 | 192.168.1.20 | Primary |
 | VM2 | 192.168.1.21 | Secondary |
 | VM3 | 192.168.1.22 | Secondary |
 
 ---
 
-## Architecture Overview
+## Tổng Quan Kiến Trúc
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -88,42 +88,42 @@ A replica set is a group of MongoDB processes that maintain the same dataset. It
 │                                                             │
 │  ┌─────────────────────────────────────────────────────────┐ │
 │  │                    Oplog                                │ │
-│  │  • Operations log on Primary                           │ │
-│  │  • Replicated to Secondaries                           │ │
-│  │  • Maintains data consistency                          │ │
+│  │  • Nhật ký thao tác trên Primary                       │ │
+│  │  • Được sao chép đến Secondaries                       │ │
+│  │  • Duy trì tính nhất quán dữ liệu                      │ │
 │  └─────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
                     ┌───────────────────────┐
-                    │    Applications       │
+                    │    Ứng Dụng           │
                     │                       │
-                    │  • Write to Primary   │
-                    │  • Read from Any Node │
-                    │  • Auto-failover      │
+                    │  • Ghi vào Primary    │
+                    │  • Đọc từ bất kỳ Node │
+                    │  • Tự động failover   │
                     └───────────────────────┘
 ```
 
 ---
 
-## Installation Guide
+## Hướng Dẫn Cài Đặt
 
-### Step 1: System Preparation
+### Bước 1: Chuẩn Bị Hệ Thống
 
-Run on all three VMs:
+Chạy trên cả ba VM:
 
 ```bash
 #!/bin/bash
-# Update system
+# Cập nhật hệ thống
 sudo apt update && sudo apt upgrade -y
 
-# Install required packages
+# Cài đặt các gói yêu cầu
 sudo apt install -y curl wget gnupg lsb-release ca-certificates
 
-# Set timezone
+# Đặt timezone
 sudo timedatectl set-timezone Asia/Ho_Chi_Minh
 
-# Configure static IP (example for VM1)
+# Cấu hình IP tĩnh (ví dụ cho VM1)
 sudo tee /etc/netplan/01-network-manager-all.yaml > /dev/null <<EOF
 network:
   version: 2
@@ -131,62 +131,62 @@ network:
     enp0s3:
       dhcp4: no
       addresses:
-        - 192.168.1.20/24  # Change for each VM: .21, .22
+        - 192.168.1.20/24  # Thay đổi cho mỗi VM: .21, .22
       gateway4: 192.168.1.1
       nameservers:
         addresses: [8.8.8.8, 8.8.4.4]
 EOF
 
-# Apply network configuration
+# Áp dụng cấu hình mạng
 sudo netplan apply
 ```
 
-### Step 2: MongoDB Installation
+### Bước 2: Cài Đặt MongoDB
 
-Create and run installation script on all VMs:
+Tạo và chạy script cài đặt trên tất cả VM:
 
 ```bash
 #!/bin/bash
 # install-mongodb.sh
-echo "Starting MongoDB installation..."
+echo "Bắt đầu cài đặt MongoDB..."
 
 # Import MongoDB public key
 curl -fsSL https://pgp.mongodb.com/server-7.0.asc | \
   sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
 
-# Add MongoDB repository
+# Thêm MongoDB repository
 echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
   sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 
-# Update package list
+# Cập nhật danh sách package
 sudo apt update
 
-# Install MongoDB
+# Cài đặt MongoDB
 sudo apt install -y mongodb-org
 
-# Pin package versions
+# Khóa phiên bản package
 echo "mongodb-org hold" | sudo dpkg --set-selections
 echo "mongodb-org-database hold" | sudo dpkg --set-selections
 echo "mongodb-org-server hold" | sudo dpkg --set-selections
 
-# Create directories
+# Tạo thư mục
 sudo mkdir -p /var/lib/mongodb
 sudo mkdir -p /var/log/mongodb
 sudo chown mongodb:mongodb /var/lib/mongodb
 sudo chown mongodb:mongodb /var/log/mongodb
 
-# Enable service
+# Kích hoạt service
 sudo systemctl enable mongod
 
-echo "MongoDB installation completed!"
+echo "Hoàn thành cài đặt MongoDB!"
 ```
 
-### Step 3: MongoDB Configuration
+### Bước 3: Cấu Hình MongoDB
 
-Create configuration file `/etc/mongod.conf` (same on all VMs):
+Tạo file cấu hình `/etc/mongod.conf` (giống nhau trên tất cả VM):
 
 ```yaml
-# Storage configuration
+# Cấu hình Storage
 storage:
   dbPath: /var/lib/mongodb
   wiredTiger:
@@ -196,7 +196,7 @@ storage:
     collectionConfig:
       blockCompressor: snappy
 
-# System log configuration
+# Cấu hình System log
 systemLog:
   destination: file
   logAppend: true
@@ -204,7 +204,7 @@ systemLog:
   logRotate: reopen
   logLevel: 1
 
-# Network configuration
+# Cấu hình Network
 net:
   port: 27017
   bindIp: 0.0.0.0
@@ -212,18 +212,18 @@ net:
   compression:
     compressors: snappy
 
-# Process management
+# Quản lý Process
 processManagement:
   fork: true
   pidFilePath: /var/run/mongodb/mongod.pid
   timeZoneInfo: /usr/share/zoneinfo
 
-# Security configuration
+# Cấu hình Security
 security:
   authorization: enabled
   keyFile: /etc/mongodb-keyfile
 
-# Replication configuration
+# Cấu hình Replication
 replication:
   replSetName: "learningRS"
   oplogSizeMB: 1024
@@ -234,20 +234,20 @@ operationProfiling:
   slowOpThresholdMs: 100
 ```
 
-### Step 4: Security Setup
+### Bước 4: Thiết Lập Bảo Mật
 
-Create keyfile for inter-replica authentication:
+Tạo keyfile cho xác thực inter-replica:
 
 ```bash
-# Generate keyfile (run on PRIMARY only)
+# Tạo keyfile (chỉ chạy trên PRIMARY)
 sudo openssl rand -base64 756 > /tmp/mongodb-keyfile
 sudo chmod 400 /tmp/mongodb-keyfile
 
-# Copy to all nodes
+# Sao chép đến tất cả nodes
 scp /tmp/mongodb-keyfile admin@192.168.1.21:/tmp/
 scp /tmp/mongodb-keyfile admin@192.168.1.22:/tmp/
 
-# On each node:
+# Trên mỗi node:
 sudo cp /tmp/mongodb-keyfile /etc/mongodb-keyfile
 sudo chown mongodb:mongodb /etc/mongodb-keyfile
 sudo chmod 400 /etc/mongodb-keyfile
@@ -255,34 +255,34 @@ sudo chmod 400 /etc/mongodb-keyfile
 
 ---
 
-## Configuration
+## Cấu Hình
 
-### Step 1: Start MongoDB Services
+### Bước 1: Khởi Động Dịch Vụ MongoDB
 
-Start MongoDB on all nodes:
+Khởi động MongoDB trên tất cả nodes:
 
 ```bash
-# On all three VMs
+# Trên cả ba VM
 sudo systemctl start mongod
 sudo systemctl status mongod
 
-# Check logs
+# Kiểm tra logs
 sudo tail -f /var/log/mongodb/mongod.log
 ```
 
-### Step 2: Initialize Replica Set
+### Bước 2: Khởi Tạo Replica Set
 
-Connect to PRIMARY node and initialize:
+Kết nối đến node PRIMARY và khởi tạo:
 
 ```bash
-# Connect to PRIMARY (192.168.1.20)
+# Kết nối đến PRIMARY (192.168.1.20)
 mongosh --host 192.168.1.20 --port 27017
 ```
 
-Initialize replica set:
+Khởi tạo replica set:
 
 ```javascript
-// Initialize replica set
+// Khởi tạo replica set
 rs.initiate({
   _id: "learningRS",
   members: [
@@ -304,15 +304,15 @@ rs.initiate({
   ]
 })
 
-// Wait for initialization (30 seconds)
-// Check status
+// Chờ khởi tạo (30 giây)
+// Kiểm tra trạng thái
 rs.status()
 ```
 
-### Step 3: Create Admin User
+### Bước 3: Tạo Admin User
 
 ```javascript
-// Create admin user
+// Tạo admin user
 use admin
 db.createUser({
   user: "admin",
@@ -322,7 +322,7 @@ db.createUser({
   ]
 })
 
-// Create replication user
+// Tạo replication user
 db.createUser({
   user: "replicator",
   pwd: "replicator_password",
@@ -336,31 +336,31 @@ db.createUser({
 
 ---
 
-## Replica Set Management
+## Quản Lý Replica Set
 
-### Monitoring Replica Set
+### Giám Sát Replica Set
 
 ```javascript
-// Check replica set status
+// Kiểm tra trạng thái replica set
 rs.status()
 
-// Check replica set configuration
+// Kiểm tra cấu hình replica set
 rs.conf()
 
-// Check oplog status
+// Kiểm tra trạng thái oplog
 rs.printReplicationInfo()
 
-// Check member status
+// Kiểm tra trạng thái member
 rs.isMaster()
 ```
 
-### Adding a New Member
+### Thêm Member Mới
 
 ```javascript
-// Add new member
+// Thêm member mới
 rs.add("192.168.1.23:27017")
 
-// Add with specific configuration
+// Thêm với cấu hình cụ thể
 rs.add({
   _id: 3,
   host: "192.168.1.23:27017",
@@ -369,38 +369,38 @@ rs.add({
 })
 ```
 
-### Removing a Member
+### Xóa Member
 
 ```javascript
-// Remove member
+// Xóa member
 rs.remove("192.168.1.23:27017")
 
-// Remove by ID
+// Xóa theo ID
 rs.remove("192.168.1.23:27017")
 ```
 
-### Manual Failover
+### Failover Thủ Công
 
 ```javascript
-// Step down primary (forces election)
+// Hạ cấp primary (ép buộc bầu cử)
 rs.stepDown()
 
-// Force reconfiguration
+// Ép buộc cấu hình lại
 rs.reconfig(config, {force: true})
 ```
 
 ---
 
-## Security Best Practices
+## Thực Hành Bảo Mật Tốt Nhất
 
-### 1. Authentication
+### 1. Xác Thực
 
 ```javascript
-// Enable authentication in mongod.conf
+// Kích hoạt xác thực trong mongod.conf
 security:
   authorization: enabled
 
-// Use strong passwords
+// Sử dụng mật khẩu mạnh
 use admin
 db.createUser({
   user: "appuser",
@@ -411,19 +411,19 @@ db.createUser({
 })
 ```
 
-### 2. Network Security
+### 2. Bảo Mật Mạng
 
 ```bash
-# Firewall configuration
+# Cấu hình firewall
 sudo ufw allow from 192.168.1.0/24 to any port 27017
 sudo ufw deny 27017
 
-# Bind to specific interfaces
+# Bind đến các interface cụ thể
 net:
   bindIp: 192.168.1.20,127.0.0.1
 ```
 
-### 3. SSL/TLS Configuration
+### 3. Cấu Hình SSL/TLS
 
 ```yaml
 # mongod.conf
@@ -436,27 +436,27 @@ net:
 
 ---
 
-## Monitoring and Maintenance
+## Giám Sát và Bảo Trì
 
-### 1. Metrics Collection
+### 1. Thu Thập Metrics
 
 ```javascript
-// Database statistics
+// Thống kê database
 db.stats()
 
-// Collection statistics
+// Thống kê collection
 db.collection.stats()
 
-// Server status
+// Trạng thái server
 db.serverStatus()
 
-// Replica set metrics
+// Metrics replica set
 rs.status().members.forEach(member => {
   print(`${member.name}: ${member.stateStr}`)
 })
 ```
 
-### 2. Backup Strategy
+### 2. Chiến Lược Backup
 
 ```bash
 #!/bin/bash
@@ -464,25 +464,25 @@ rs.status().members.forEach(member => {
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/backup/mongodb"
 
-# Create backup directory
+# Tạo thư mục backup
 mkdir -p $BACKUP_DIR
 
-# Backup using mongodump
+# Backup sử dụng mongodump
 mongodump --host 192.168.1.20:27017 \
   --username admin \
   --password your_password \
   --authenticationDatabase admin \
   --out $BACKUP_DIR/backup_$DATE
 
-# Compress backup
+# Nén backup
 tar -czf $BACKUP_DIR/backup_$DATE.tar.gz $BACKUP_DIR/backup_$DATE
 rm -rf $BACKUP_DIR/backup_$DATE
 
-# Remove old backups (keep last 7 days)
+# Xóa backup cũ (giữ lại 7 ngày gần nhất)
 find $BACKUP_DIR -name "backup_*.tar.gz" -mtime +7 -delete
 ```
 
-### 3. Health Checks
+### 3. Kiểm Tra Sức Khỏe
 
 ```bash
 #!/bin/bash
@@ -490,17 +490,17 @@ find $BACKUP_DIR -name "backup_*.tar.gz" -mtime +7 -delete
 NODES=("192.168.1.20" "192.168.1.21" "192.168.1.22")
 
 for node in "${NODES[@]}"; do
-  echo "Checking $node..."
+  echo "Đang kiểm tra $node..."
   
-  # Check if MongoDB is running
+  # Kiểm tra xem MongoDB có đang chạy không
   if mongosh --host $node --port 27017 --eval "db.runCommand('ping')" --quiet; then
-    echo "✓ $node is responding"
+    echo "✓ $node đang hoạt động"
   else
-    echo "✗ $node is not responding"
+    echo "✗ $node không hoạt động"
   fi
 done
 
-# Check replica set health
+# Kiểm tra sức khỏe replica set
 mongosh --host 192.168.1.20:27017 --eval "
   rs.status().members.forEach(function(member) {
     print(member.name + ': ' + member.stateStr + ' (health: ' + member.health + ')');
@@ -510,67 +510,67 @@ mongosh --host 192.168.1.20:27017 --eval "
 
 ---
 
-## Troubleshooting
+## Khắc Phục Sự Cố
 
-### Common Issues
+### Các Vấn Đề Thường Gặp
 
-#### 1. Node Not Joining Replica Set
+#### 1. Node Không Tham Gia Replica Set
 
 ```bash
-# Check logs
+# Kiểm tra logs
 sudo tail -f /var/log/mongodb/mongod.log
 
-# Check network connectivity
+# Kiểm tra kết nối mạng
 telnet 192.168.1.20 27017
 
-# Check DNS resolution
+# Kiểm tra phân giải DNS
 nslookup 192.168.1.20
 ```
 
-#### 2. Authentication Failures
+#### 2. Lỗi Xác Thực
 
 ```javascript
-// Check users
+// Kiểm tra users
 use admin
 db.getUsers()
 
-// Reset user password
+// Đặt lại mật khẩu user
 db.changeUserPassword("username", "newpassword")
 ```
 
-#### 3. Replica Lag
+#### 3. Độ Trễ Replica
 
 ```javascript
-// Check replication lag
+// Kiểm tra độ trễ replication
 rs.printSlaveReplicationInfo()
 
-// Check oplog size
+// Kiểm tra kích thước oplog
 db.oplog.rs.stats()
 ```
 
-### Performance Optimization
+### Tối Ưu Hóa Hiệu Suất
 
 ```javascript
-// Check slow queries
+// Kiểm tra các truy vấn chậm
 db.setProfilingLevel(1, { slowms: 100 })
 db.system.profile.find().sort({ ts: -1 }).limit(5)
 
-// Index optimization
+// Tối ưu hóa index
 db.collection.createIndex({ field: 1 })
 db.collection.getIndexes()
 ```
 
 ---
 
-## Integration with Other Services
+## Tích Hợp với Các Dịch Vụ Khác
 
-### 1. Application Connection
+### 1. Kết Nối Ứng Dụng
 
 ```javascript
 // Connection string
 const connectionString = "mongodb://admin:password@192.168.1.20:27017,192.168.1.21:27017,192.168.1.22:27017/myapp?replicaSet=learningRS&authSource=admin";
 
-// Node.js example
+// Ví dụ Node.js
 const { MongoClient } = require('mongodb');
 
 const client = new MongoClient(connectionString, {
@@ -581,7 +581,7 @@ const client = new MongoClient(connectionString, {
 });
 ```
 
-### 2. Monitoring Integration
+### 2. Tích Hợp Giám Sát
 
 ```yaml
 # prometheus.yml
@@ -590,39 +590,39 @@ const client = new MongoClient(connectionString, {
     - targets: ['192.168.1.20:9216', '192.168.1.21:9216', '192.168.1.22:9216']
 ```
 
-### 3. Backup Integration
+### 3. Tích Hợp Backup
 
 ```bash
-# Integrate with backup service
+# Tích hợp với dịch vụ backup
 #!/bin/bash
-# Schedule with cron
+# Lập lịch với cron
 # 0 2 * * * /opt/scripts/backup-mongodb.sh
 
-# Upload to cloud storage
+# Upload lên cloud storage
 aws s3 cp /backup/mongodb/backup_latest.tar.gz s3://your-bucket/mongodb/
 ```
 
 ---
 
-## Next Steps
+## Các Bước Tiếp Theo
 
-After successful MongoDB setup:
+Sau khi thiết lập MongoDB thành công:
 
-1. **Configure Monitoring**: Set up Prometheus and Grafana for MongoDB metrics
-2. **Implement Backup**: Schedule regular backups and test recovery
-3. **Security Hardening**: Implement SSL/TLS and additional security measures
-4. **Performance Tuning**: Optimize queries and indexes based on workload
-5. **High Availability Testing**: Test failover scenarios
+1. **Cấu Hình Giám Sát**: Thiết lập Prometheus và Grafana cho MongoDB metrics
+2. **Triển Khai Backup**: Lập lịch backup định kỳ và kiểm tra khôi phục
+3. **Tăng Cường Bảo Mật**: Triển khai SSL/TLS và các biện pháp bảo mật bổ sung
+4. **Điều Chỉnh Hiệu Suất**: Tối ưu hóa truy vấn và index dựa trên workload
+5. **Kiểm Tra Khả Năng Sẵn Sàng Cao**: Kiểm tra các tình huống failover
 
-For more advanced topics, refer to:
+Để tìm hiểu thêm các chủ đề nâng cao, tham khảo:
 - [Harbor Container Registry](container-registry.md)
-- [Monitoring Setup](monitoring-setup.md)
-- [VPN Server Configuration](vpn-server.md)
+- [Thiết Lập Monitoring](monitoring-setup.md)
+- [Cấu Hình VPN Server](vpn-server.md)
 
 ---
 
-## Conclusion
+## Kết Luận
 
-This MongoDB Replica Set provides a robust, scalable database solution with high availability and data redundancy. The setup ensures your applications can handle failures gracefully while maintaining data consistency across all nodes.
+MongoDB Replica Set này cung cấp một giải pháp cơ sở dữ liệu mạnh mẽ, có khả năng mở rộng với tính sẵn sàng cao và dự phòng dữ liệu. Thiết lập này đảm bảo các ứng dụng của bạn có thể xử lý lỗi một cách graceful trong khi duy trì tính nhất quán dữ liệu trên tất cả các node.
 
-For production deployments, consider additional features like sharding for horizontal scaling and advanced security configurations based on your specific requirements. 
+Đối với các triển khai production, hãy xem xét các tính năng bổ sung như sharding để mở rộng theo chiều ngang và cấu hình bảo mật nâng cao dựa trên yêu cầu cụ thể của bạn. 
