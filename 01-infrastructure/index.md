@@ -71,7 +71,18 @@ Phần này cung cấp tài liệu toàn diện để thiết lập tầng infra
 
 **Yêu cầu tiên quyết**: ESXi server đã cài đặt và cấu hình
 
-### 3. [Networking](networking.md)
+### 3. [ESXi pfSense Network Setup](ESXi-pfSense-Network-Setup.md)
+**Tầng Mạng - Network Segmentation với pfSense**
+- ✅ Tạo isolated virtual switches trong ESXi
+- ✅ Cài đặt và cấu hình pfSense router/firewall
+- ✅ Network segmentation và subnet isolation
+- ✅ Firewall rules và security configuration
+- ✅ Troubleshooting network connectivity
+- ✅ Production security best practices
+
+**Yêu cầu tiên quyết**: ESXi server và kiến thức networking cơ bản
+
+### 4. [Networking](networking.md)
 **Tầng Mạng - Kiến thức Nền tảng**
 - ✅ Khái niệm ESXi networking (vmnic, vSwitch)
 - ✅ Cấu hình port groups và VLANs
@@ -82,7 +93,7 @@ Phần này cung cấp tài liệu toàn diện để thiết lập tầng infra
 
 **Yêu cầu tiên quyết**: Hiểu biết networking cơ bản
 
-### 4. [Port Forwarding](port-forwarding.md)
+### 5. [Port Forwarding](port-forwarding.md)
 **Tầng Dịch vụ - Truy cập Bên ngoài**
 - ✅ Cấu hình router cho port forwarding
 - ✅ Expose services ra internet an toàn
