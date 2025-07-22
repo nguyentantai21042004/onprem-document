@@ -1,18 +1,12 @@
-# Description: Portfolio application deployment template
-# Dependencies: Harbor registry, personal namespace
-# Variables: <NAMESPACE>, <REGISTRY>, <IMAGE_TAG>, <REPLICAS>
-# Usage: Replace variables and apply with kubectl
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: portfolio-deployment
-  namespace: <NAMESPACE>
+  namespace: personal
   labels:
     app: portfolio
-    version: <IMAGE_TAG>
 spec:
-  replicas: <REPLICAS>
+  replicas: 1
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -26,13 +20,13 @@ spec:
     metadata:
       labels:
         app: portfolio
-      namespace: <NAMESPACE>
+      namespace: personal
     spec:
       imagePullSecrets:
       - name: harbor-secret
       containers:
       - name: portfolio
-        image: <REGISTRY>/personal/portfolio:<IMAGE_TAG>
+        image: harbor.ngtantai.pro/personal/portfolio:250714-154212
         imagePullPolicy: Always
         ports:
         - containerPort: 80
@@ -49,7 +43,7 @@ spec:
         - name: NODE_ENV
           value: "production"
         - name: HARBOR_REGISTRY
-          value: "<REGISTRY>"
+          value: "harbor.ngtantai.pro"
         readinessProbe:
           httpGet:
             path: /
@@ -66,13 +60,13 @@ spec:
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
+
 ---
-# Portfolio service
 apiVersion: v1
 kind: Service
 metadata:
   name: portfolio-service
-  namespace: <NAMESPACE>
+  namespace: personal
   labels:
     app: portfolio
 spec:
@@ -83,4 +77,28 @@ spec:
     targetPort: 80
     protocol: TCP
     name: http
-  type: ClusterIP 
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portfolio-ingress
+  namespace: personal
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: portfolio.ngtantai.pro
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portfolio-service
+            port:
+              number: 80

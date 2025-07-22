@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tanca-bot-deployment
+  namespace: discord-bot
+  labels:
+    app: tanca-bot
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: tanca-bot
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: tanca-bot
+    spec:
+      containers:
+        - name: tanca-bot
+          image: harbor.ngtantai.pro/discord-bot/tanca-shift:250719-185151
+          imagePullPolicy: Always
+          env:
+            - name: BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tanca-bot-secret
+                  key: BOT_TOKEN
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: tanca-bot-config
+                  key: LOG_LEVEL
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: tanca-bot-config
+                  key: ENVIRONMENT
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: tanca-bot-config
+                  key: TZ
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      imagePullSecrets:
+        - name: harbor-secret
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tanca-bot-secret
+  namespace: discord-bot
+type: Opaque
+data:
+  BOT_TOKEN: TVRNM09EQXlPRGM1TnpjNE5USTNOalUxTncuR1FEVnFsLk02Z3F5TkpROTFsMTFoak1MeHJjQUVRUlB5OHlLaTZ0MmhTUGxR

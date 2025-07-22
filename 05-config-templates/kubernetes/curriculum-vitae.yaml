@@ -26,7 +26,7 @@ spec:
       - name: harbor-secret
       containers:
       - name: curriculum-vitae
-        image: harbor.ngtantai.pro/personal/curriculum-vitae:250713-103103
+        image: harbor.ngtantai.pro/personal/curriculum-vitae:250713-163704
         imagePullPolicy: Always
         ports:
         - containerPort: 80
@@ -60,8 +60,8 @@ spec:
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
+
 ---
-# Curriculum Vitae service
 apiVersion: v1
 kind: Service
 metadata:
@@ -77,4 +77,28 @@ spec:
     targetPort: 80
     protocol: TCP
     name: http
-  type: ClusterIP 
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: curriculum-vitae-ingress
+  namespace: personal
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: curriculum-vitae.ngtantai.pro
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: curriculum-vitae-service
+            port:
+              number: 80
