@@ -5,7 +5,7 @@ sudo apt update
 sudo apt install zsh -y
 
 # Install Oh My Zsh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
 # Get the actual user (not root when using sudo)
 ACTUAL_HOME=/home/tantai
@@ -14,7 +14,6 @@ ZSH_CUSTOM="$ACTUAL_HOME/.oh-my-zsh/custom"
 # Install plugins
 git clone https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-
 
 # Create .zshrc for the actual user
 tee "$ACTUAL_HOME/.zshrc" > /dev/null <<EOF
@@ -43,4 +42,7 @@ ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
 ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}%1{✗%}"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 EOF
+
+source "$ACTUAL_HOME/.zshrc"
+
 echo "Setup complete!"
