@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: portfolio-deployment
+  name: portfolio
   namespace: personal
   labels:
     app: portfolio
@@ -26,7 +26,7 @@ spec:
       - name: harbor-secret
       containers:
       - name: portfolio
-        image: harbor.ngtantai.pro/personal/portfolio:250714-154212
+        image: harbor.ngtantai.pro/personal/portfolio:250729-151614
         imagePullPolicy: Always
         ports:
         - containerPort: 80

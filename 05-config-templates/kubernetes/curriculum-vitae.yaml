@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: curriculum-vitae-deployment
+  name: curriculum-vitae
   namespace: personal
   labels:
     app: curriculum-vitae
