@@ -1,0 +1,38 @@
+➜  [kubernete-1] ~ # Create namespace
+kubectl create namespace minio-operator
+
+# Install operator
+kubectl apply -k "github.com/minio/operator?ref=v5.0.15"
+
+# Wait for operator ready
+kubectl wait --for=condition=ready pod -l name=minio-operator -n minio-operator --timeout=300s
+
+# Create tenant namespace
+kubectl create namespace minio-tenant
+namespace/minio-operator created
+Warning: resource namespaces/minio-operator is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+namespace/minio-operator configured
+customresourcedefinition.apiextensions.k8s.io/miniojobs.job.min.io created
+customresourcedefinition.apiextensions.k8s.io/policybindings.sts.min.io created
+customresourcedefinition.apiextensions.k8s.io/tenants.minio.min.io created
+serviceaccount/console-sa created
+serviceaccount/minio-operator created
+clusterrole.rbac.authorization.k8s.io/console-sa-role created
+clusterrole.rbac.authorization.k8s.io/minio-operator-role created
+clusterrolebinding.rbac.authorization.k8s.io/console-sa-binding created
+clusterrolebinding.rbac.authorization.k8s.io/minio-operator-binding created
+configmap/console-env created
+secret/console-sa-secret created
+service/console created
+service/operator created
+service/sts created
+deployment.apps/console created
+deployment.apps/minio-operator created
+error: no matching resources found
+namespace/minio-tenant created
+➜  [kubernete-1] ~ kubectl get pods -n minio-operator
+
+NAME                              READY   STATUS    RESTARTS   AGE
+console-57d696848f-m99kl          1/1     Running   0          16s
+minio-operator-6b7848fd84-n8t9r   1/1     Running   0          16s
+minio-operator-6b7848fd84-xrw5h   1/1     Running   0          16s

@@ -1,0 +1,19 @@
+# metallb-general-pool.yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: general-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.16.21.200-172.16.21.230
+  autoAssign: true
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: general-advertise
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - general-pool
