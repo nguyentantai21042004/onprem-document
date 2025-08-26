@@ -6,11 +6,11 @@ File này chứa cấu hình MetalLB để cung cấp Load Balancer cho Kubernet
 ## Cấu hình YAML
 
 ```yaml
-# metallb-general-pool.yaml
+# metallb-metallb-pool.yaml
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
-  name: general-pool
+  name: metallb-pool
   namespace: metallb-system
 spec:
   addresses:
@@ -24,7 +24,7 @@ metadata:
   namespace: metallb-system
 spec:
   ipAddressPools:
-  - general-pool
+  - metallb-pool
 ```
 
 ## Giải thích cấu hình
@@ -33,7 +33,7 @@ spec:
 - **apiVersion**: `metallb.io/v1beta1` - Phiên bản API của MetalLB
 - **kind**: `IPAddressPool` - Định nghĩa một pool IP addresses
 - **metadata**:
-  - **name**: `general-pool` - Tên của IP pool
+  - **name**: `metallb-pool` - Tên của IP pool
   - **namespace**: `metallb-system` - Namespace chứa MetalLB
 - **spec**:
   - **addresses**: `172.16.21.200-172.16.21.230` - Dải IP từ 172.16.21.200 đến 172.16.21.230 (31 IP addresses)
@@ -46,7 +46,7 @@ spec:
   - **name**: `general-advertise` - Tên của advertisement
   - **namespace**: `metallb-system` - Namespace chứa MetalLB
 - **spec**:
-  - **ipAddressPools**: `general-pool` - Liên kết với IP pool đã định nghĩa ở trên
+  - **ipAddressPools**: `metallb-pool` - Liên kết với IP pool đã định nghĩa ở trên
 
 ## Cách hoạt động
 
@@ -59,7 +59,11 @@ spec:
 Để áp dụng cấu hình này:
 
 ```bash
-kubectl apply -f metallb-general-pool.yaml
+# Cài đặt MetalLB (CRDs + controllers)
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.5/config/manifests/metallb-native.yaml
+
+# Áp dụng IPAddressPool và L2Advertisement
+kubectl apply -f metallb-metallb-pool.yaml
 ```
 
 ## Kiểm tra trạng thái
