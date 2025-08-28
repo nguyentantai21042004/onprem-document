@@ -1,0 +1,52 @@
+# 0. Tạo namespace jenkins (chạy trước)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins
+---
+# 1. Tạo ServiceAccount trong namespace jenkins
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-deployer
+  namespace: jenkins
+---
+# 2. Tạo ClusterRole với quyền cần thiết
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deployment-updater-cluster
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list"]
+---
+# 3. Tạo ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins-deployment-updater-cluster
+subjects:
+- kind: ServiceAccount
+  name: jenkins-deployer
+  namespace: jenkins # Namespace chứa ServiceAccount
+roleRef:
+  kind: ClusterRole
+  name: deployment-updater-cluster
+  apiGroup: rbac.authorization.k8s.io
+---
+# 4. Tạo Secret cho token vĩnh viễn (KHÔNG HẾT HẠN)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jenkins-deployer-token
+  namespace: jenkins
+  annotations:
+    kubernetes.io/service-account.name: jenkins-deployer
+type: kubernetes.io/service-account-token
