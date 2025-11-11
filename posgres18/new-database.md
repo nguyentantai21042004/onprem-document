@@ -257,7 +257,7 @@ REVOKE ALL ON SCHEMA public FROM kanban_owner;
 -- Tạo user cho production API
 CREATE ROLE kanban_api WITH 
     LOGIN 
-    PASSWORD 'API_ProductionP@ss456!' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'kanban_api@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
     NOSUPERUSER 
     NOCREATEDB                    -- KHÔNG được tạo database
     NOCREATEROLE 
@@ -700,7 +700,7 @@ FATAL: pg_hba.conf rejects connection for host "127.0.0.1", user "kanban_owner",
 psql -U kanban_api -h localhost -d kanban
 ```
 
-Nhập password: `API_ProductionP@ss456!`
+Nhập password: `kanban_api@2025`
 
 ```sql
 -- Test SELECT (phải OK)
@@ -753,7 +753,7 @@ ALTER TABLE api_test ADD COLUMN description TEXT;
 psql -U kanban_dev -h localhost -d kanban
 ```
 
-Nhập password: `Dev_TestingP@ss789!`
+Nhập password: `kanban_dev@2025`
 
 ```sql
 -- Test SELECT (phải OK)
@@ -805,7 +805,7 @@ DROP DATABASE kanban;
 psql -U kanban_readonly -h localhost -d kanban
 ```
 
-Nhập password: `ReadOnly_ReportP@ss321!`
+Nhập password: `kanban_readonly@2025`
 
 ```sql
 -- Test SELECT (phải OK)
@@ -865,7 +865,7 @@ TRUNCATE users;
 - Port: `5432`
 - Maintenance database: `kanban`
 - Username: `kanban_api`
-- Password: `API_ProductionP@ss456!`
+- Password: `kanban_api@2025`
 
 #### Connection 3: kanban_dev
 - Name: `kanban - Dev`
@@ -873,7 +873,7 @@ TRUNCATE users;
 - Port: `5432`
 - Maintenance database: `kanban`
 - Username: `kanban_dev`
-- Password: `Dev_TestingP@ss789!`
+- Password: `kanban_dev@2025`
 
 #### Connection 4: kanban_readonly
 - Name: `kanban - Readonly`
@@ -881,7 +881,7 @@ TRUNCATE users;
 - Port: `5432`
 - Maintenance database: `kanban`
 - Username: `kanban_readonly`
-- Password: `ReadOnly_ReportP@ss321!`
+- Password: `kanban_readonly@2025`
 
 3. Kiểm tra từng connection:
    - ✅ Tất cả đều kết nối thành công
@@ -914,31 +914,31 @@ DATABASE_URL="postgresql://kanban_owner:Owner_SecureP@ss123!@10.0.1.5:5432/kanba
 #### API (Production Application)
 ```bash
 # Production
-DATABASE_URL="postgresql://kanban_api:API_ProductionP@ss456!@10.0.1.5:5432/kanban"
+DATABASE_URL="postgresql://kanban_api:kanban_api@2025@10.0.1.5:5432/kanban"
 
 # Development
-DATABASE_URL="postgresql://kanban_api:API_ProductionP@ss456!@localhost:5432/kanban"
+DATABASE_URL="postgresql://kanban_api:kanban_api@2025@localhost:5432/kanban"
 
 # Docker
-DATABASE_URL="postgresql://kanban_api:API_ProductionP@ss456!@postgres:5432/kanban"
+DATABASE_URL="postgresql://kanban_api:kanban_api@2025@postgres:5432/kanban"
 ```
 
 #### Dev (Developers)
 ```bash
 # Local development
-DATABASE_URL="postgresql://kanban_dev:Dev_TestingP@ss789!@localhost:5432/kanban"
+DATABASE_URL="postgresql://kanban_dev:kanban_dev@2025@localhost:5432/kanban"
 
 # Dev server
-DATABASE_URL="postgresql://kanban_dev:Dev_TestingP@ss789!@dev.example.com:5432/kanban"
+DATABASE_URL="postgresql://kanban_dev:kanban_dev@2025@dev.example.com:5432/kanban"
 ```
 
 #### Readonly (Reporting/Analytics)
 ```bash
 # Analytics tools
-DATABASE_URL="postgresql://kanban_readonly:ReadOnly_ReportP@ss321!@10.0.1.5:5432/kanban"
+DATABASE_URL="postgresql://kanban_readonly:kanban_readonly@2025@10.0.1.5:5432/kanban"
 
 # BI tools
-DATABASE_URL="postgresql://kanban_readonly:ReadOnly_ReportP@ss321!@localhost:5432/kanban"
+DATABASE_URL="postgresql://kanban_readonly:kanban_readonly@2025@localhost:5432/kanban"
 ```
 
 ### 8.3. Connection strings cho frameworks
@@ -1040,7 +1040,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=kanban
 DB_USER=kanban_api
-DB_PASSWORD=API_ProductionP@ss456!
+DB_PASSWORD=kanban_api@2025
 ```
 
 #### Connection pooling
