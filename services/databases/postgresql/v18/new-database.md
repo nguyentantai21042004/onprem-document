@@ -164,7 +164,7 @@ WHERE datname = 'smap';
 -- Tạo user owner
 CREATE ROLE smap_owner WITH 
     LOGIN                           -- Cho phép đăng nhập
-    PASSWORD 'smap_owner@21042004' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_owner@21042004'
     NOSUPERUSER                     -- Không phải superuser
     CREATEDB                        -- Có thể tạo/xóa database
     NOCREATEROLE                    -- Không tạo role khác
@@ -257,7 +257,7 @@ REVOKE ALL ON SCHEMA public FROM smap_owner;
 -- Tạo user cho production API
 CREATE ROLE smap_api WITH 
     LOGIN 
-    PASSWORD 'smap_api@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_api@2025'
     NOSUPERUSER 
     NOCREATEDB                    -- KHÔNG được tạo database
     NOCREATEROLE 
@@ -346,7 +346,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public
 -- Tạo user cho developers
 CREATE ROLE smap_dev WITH 
     LOGIN 
-    PASSWORD 'smap_dev@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_dev@2025'
     NOSUPERUSER 
     NOCREATEDB                     -- KHÔNG được tạo database
     NOCREATEROLE 
@@ -417,7 +417,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public
 -- Tạo user readonly
 CREATE ROLE smap_readonly WITH 
     LOGIN 
-    PASSWORD 'smap_readonly@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_readonly@2025'
     NOSUPERUSER 
     NOCREATEDB 
     NOCREATEROLE 
