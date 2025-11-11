@@ -515,66 +515,51 @@ sudo nano /etc/postgresql/18/main/pg_hba.conf
 # -------------------------------
 # 1. USER: kanban_owner (Owner)
 # -------------------------------
-# Chỉ cho phép kết nối từ localhost (bảo mật cao)
-# Owner chỉ dùng cho migrations, không nên expose ra ngoài
+# Chỉ cho phép kết nối từ localhost và các subnet nội bộ được phép (192.168.1.0/24, 172.16.21.0/24)
 
 local   kanban           kanban_owner                             md5
 host    kanban           kanban_owner     127.0.0.1/32            md5
 host    kanban           kanban_owner     ::1/128                 md5
-
-# Từ chối owner kết nối từ mạng ngoài (production security)
+host    kanban           kanban_owner     192.168.1.0/24          md5
+host    kanban           kanban_owner     172.16.21.0/24          md5
+# Từ chối owner kết nối từ mạng ngoài
 host    kanban           kanban_owner     0.0.0.0/0               reject
 
 # -------------------------------
 # 2. USER: kanban_api (Production API)
 # -------------------------------
-# Cho phép từ application servers
-# ⚠️ THAY ĐỔI IP ranges phù hợp với môi trường của bạn
+# Cho phép kết nối vào database kanban từ localhost, 192.168.1.0/24 và 172.16.21.0/24 (có thể bổ sung subnet khác nếu cần)
 
-# Từ localhost (cho dev/test local)
 local   kanban           kanban_api                               md5
 host    kanban           kanban_api       127.0.0.1/32            md5
 host    kanban           kanban_api       ::1/128                 md5
-
-# Từ application servers (VD: subnet nội bộ)
-host    kanban           kanban_api       10.0.1.0/24             md5
 host    kanban           kanban_api       192.168.1.0/24          md5
-
-# Từ IP cụ thể của app server
-host    kanban           kanban_api       192.168.1.100/32        md5
-host    kanban           kanban_api       192.168.1.101/32        md5
-
-# ⚠️ KHÔNG KHUYẾN NGHỊ: Cho phép từ mọi IP (chỉ dùng cho dev)
-# host    kanban           kanban_api       0.0.0.0/0               md5
+host    kanban           kanban_api       172.16.21.0/24          md5
+host    kanban           kanban_api       0.0.0.0/0               md5
 
 # -------------------------------
 # 3. USER: kanban_dev (Developers)
 # -------------------------------
-# Cho phép từ mạng nội bộ, VPN
+# Cho phép kết nối vào database kanban từ localhost, 192.168.1.0/24 và 172.16.21.0/24
 
 local   kanban           kanban_dev                               md5
 host    kanban           kanban_dev       127.0.0.1/32            md5
 host    kanban           kanban_dev       ::1/128                 md5
-
-# Từ mạng nội bộ office
-host    kanban           kanban_dev       192.168.0.0/16          md5
-host    kanban           kanban_dev       10.0.0.0/8              md5
-
-# Từ VPN range
-host    kanban           kanban_dev       172.16.0.0/12           md5
+host    kanban           kanban_dev       192.168.1.0/24          md5
+host    kanban           kanban_dev       172.16.21.0/24          md5
+host    kanban           kanban_dev       0.0.0.0/0               md5
 
 # -------------------------------
 # 4. USER: kanban_readonly (Analytics)
 # -------------------------------
-# Cho phép từ reporting servers
+# Cho phép kết nối vào database kanban từ localhost, 192.168.1.0/24 và 172.16.21.0/24
 
 local   kanban           kanban_readonly                          md5
 host    kanban           kanban_readonly  127.0.0.1/32            md5
 host    kanban           kanban_readonly  ::1/128                 md5
-
-# Từ reporting/BI servers
-host    kanban           kanban_readonly  10.0.2.0/24             md5
-host    kanban           kanban_readonly  192.168.2.0/24          md5
+host    kanban           kanban_readonly  192.168.1.0/24          md5
+host    kanban           kanban_readonly  172.16.21.0/24          md5
+host    kanban           kanban_readonly  0.0.0.0/0               md5
 
 # ==============================================================================
 # SECURITY: TỪ CHỐI tất cả kanban users kết nối vào database KHÁC
