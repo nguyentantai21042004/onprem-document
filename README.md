@@ -1,10 +1,10 @@
 # Tài Liệu Xây Dựng Server On-Premise
 
-## 🎯 Tổng Quan Dự Án
+## Tổng Quan Dự Án
 
 Repository này chứa tài liệu hướng dẫn chi tiết để xây dựng hệ thống server on-premise production-ready từ đầu. Các hướng dẫn bao gồm mọi thứ từ thiết lập infrastructure cơ bản đến Kubernetes orchestration nâng cao và tự động hóa CI/CD.
 
-## 🏗️ Kiến Trúc Hoàn Chỉnh
+## Kiến Trúc Hoàn Chỉnh
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -56,52 +56,52 @@ Repository này chứa tài liệu hướng dẫn chi tiết để xây dựng h
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Cấu Trúc Tài Liệu Hoàn Chỉnh
+## Cấu Trúc Tài Liệu Hoàn Chỉnh
 
-### 🔧 [01-Infrastructure](01-infrastructure/)
+### [01-Infrastructure](01-infrastructure/)
 **Tầng Nền Tảng - Thiết lập Phần cứng & Mạng**
-- ✅ **[Wake-on-LAN](01-infrastructure/wake-on-lan.md)** - Quản lý nguồn từ xa với tự động hóa
-- ✅ **[ESXi VM Autostart](01-infrastructure/esxi-vm-autostart.md)** - Tự động khởi động VM và tích hợp systemd
-- ✅ **[Networking](01-infrastructure/networking.md)** - Khái niệm và cấu hình mạng ESXi
-- ✅ **[Port Forwarding](01-infrastructure/port-forwarding.md)** - Cấu hình router và expose services
-- ✅ **[Tổng quan](01-infrastructure/index.md)** - Tổng quan infrastructure hoàn chỉnh
+- **[Wake-on-LAN](01-infrastructure/wake-on-lan.md)** - Quản lý nguồn từ xa với tự động hóa
+- **[ESXi VM Autostart](01-infrastructure/esxi-vm-autostart.md)** - Tự động khởi động VM và tích hợp systemd
+- **[Networking](01-infrastructure/networking.md)** - Khái niệm và cấu hình mạng ESXi
+- **[Port Forwarding](01-infrastructure/port-forwarding.md)** - Cấu hình router và expose services
+- **[Tổng quan](01-infrastructure/index.md)** - Tổng quan infrastructure hoàn chỉnh
 
-### 🛠️ [02-Services](02-services/)
+### [02-Services](02-services/)
 **Tầng Dịch Vụ Cốt Lõi - Các Ứng Dụng Thiết Yếu**
-- ✅ **[VPN Server](02-services/vpn-server.md)** - OpenVPN với quản lý OVPM
-- ✅ **[MongoDB](02-services/database-mongodb.md)** - Replica set với high availability
-- ✅ **[PostgreSQL](02-services/database-postgresql.md)** - Repmgr automatic failover
-- ✅ **[Harbor Registry](02-services/container-registry.md)** - Container registry với security scanning
-- ✅ **[Monitoring Stack](02-services/monitoring-setup.md)** - Prometheus + Grafana + Alertmanager
-- ✅ **[Tổng quan](02-services/index.md)** - Tổng quan services hoàn chỉnh
+- **[VPN Server](02-services/vpn-server.md)** - OpenVPN với quản lý OVPM
+- **[MongoDB](02-services/database-mongodb.md)** - Replica set với high availability
+- **[PostgreSQL](02-services/database-postgresql.md)** - Repmgr automatic failover
+- **[Harbor Registry](02-services/container-registry.md)** - Container registry với security scanning
+- **[Monitoring Stack](02-services/monitoring-setup.md)** - Prometheus + Grafana + Alertmanager
+- **[Tổng quan](02-services/index.md)** - Tổng quan services hoàn chỉnh
 
-### ⚙️ [03-Kubernetes](03-kubernetes/)
+### [03-Kubernetes](03-kubernetes/)
 **Tầng Điều Phối - Quản Lý Container**
-- ✅ **[Cluster Setup](03-kubernetes/cluster-setup.md)** - HA cluster với 3 masters
-- ✅ **[Kubernetes Concepts](03-kubernetes/kubernetes-concepts.md)** - Kiến thức nền tảng YAML và best practices
-- ✅ **[Workloads](03-kubernetes/workloads.md)** - Deployments, services, và scaling
-- ✅ **[Ingress & Networking](03-kubernetes/ingress-networking.md)** - Truy cập từ bên ngoài và routing
-- ✅ **[Storage & Persistence](03-kubernetes/storage-persistence.md)** - Persistent volumes và quản lý dữ liệu
-- ✅ **[Rancher Management](03-kubernetes/rancher-management.md)** - Nền tảng quản lý GUI
-- ✅ **[Tổng quan](03-kubernetes/index.md)** - Tổng quan Kubernetes hoàn chỉnh
+- **[Cluster Setup](03-kubernetes/cluster-setup.md)** - HA cluster với 3 masters
+- **[Kubernetes Concepts](03-kubernetes/kubernetes-concepts.md)** - Kiến thức nền tảng YAML và best practices
+- **[Workloads](03-kubernetes/workloads.md)** - Deployments, services, và scaling
+- **[Ingress & Networking](03-kubernetes/ingress-networking.md)** - Truy cập từ bên ngoài và routing
+- **[Storage & Persistence](03-kubernetes/storage-persistence.md)** - Persistent volumes và quản lý dữ liệu
+- **[Rancher Management](03-kubernetes/rancher-management.md)** - Nền tảng quản lý GUI
+- **[Tổng quan](03-kubernetes/index.md)** - Tổng quan Kubernetes hoàn chỉnh
 
-### 🚀 [04-CI/CD](04-cicd/)
+### [04-CI/CD](04-cicd/)
 **Tầng Tự Động Hóa - Continuous Integration & Deployment**
-- ✅ **[Jenkins Setup](04-cicd/jenkins-setup.md)** - Cài đặt Jenkins hoàn chỉnh với tích hợp K8s
-- ✅ **[Tổng quan](04-cicd/index.md)** - Tổng quan CI/CD hoàn chỉnh với pipeline templates
-- 🔄 **Pipeline Configuration** - Templates pipeline đa giai đoạn
-- 🔄 **GitOps Workflows** - Quy trình deployment tự động
-- 🔄 **Security & Compliance** - Thực hành pipeline bảo mật
+- **[Jenkins Setup](04-cicd/jenkins-setup.md)** - Cài đặt Jenkins hoàn chỉnh với tích hợp K8s
+- **[Tổng quan](04-cicd/index.md)** - Tổng quan CI/CD hoàn chỉnh với pipeline templates
+- **Pipeline Configuration** - Templates pipeline đa giai đoạn
+- **GitOps Workflows** - Quy trình deployment tự động
+- **Security & Compliance** - Thực hành pipeline bảo mật
 
-### 📄 [05-Configuration Templates](05-config-templates/)
+### [05-Configuration Templates](05-config-templates/)
 **Tầng Templates - Cấu Hình Sẵn Sàng Sử Dụng**
-- ✅ **[Tổng quan](05-config-templates/index.md)** - Tổng quan template hoàn chỉnh
-- ✅ **[Portfolio Deployment](05-config-templates/applications/portfolio/deployment.yaml)** - Template deployment ứng dụng
-- ✅ **[Multi-Host Ingress](05-config-templates/kubernetes/ingress/multi-host-ingress.yaml)** - Template cấu hình ingress
-- ✅ **[Jenkins Pipeline](05-config-templates/jenkins/pipelines/build-deploy.groovy)** - Template pipeline hoàn chỉnh
-- 🔄 **Templates Bổ Sung** - Mở rộng thư viện template
+- **[Tổng quan](05-config-templates/index.md)** - Tổng quan template hoàn chỉnh
+- **[Portfolio Deployment](05-config-templates/applications/portfolio/deployment.yaml)** - Template deployment ứng dụng
+- **[Multi-Host Ingress](05-config-templates/kubernetes/ingress/multi-host-ingress.yaml)** - Template cấu hình ingress
+- **[Jenkins Pipeline](05-config-templates/jenkins/pipelines/build-deploy.groovy)** - Template pipeline hoàn chỉnh
+- **Templates Bổ Sung** - Mở rộng thư viện template
 
-## 🎯 Lộ Trình Triển Khai
+## Lộ Trình Triển Khai
 
 ### Giai đoạn 1: Nền Tảng (Ngày 1-2)
 1. **Thiết lập Infrastructure**
@@ -167,7 +167,7 @@ Repository này chứa tài liệu hướng dẫn chi tiết để xây dựng h
    - Tối ưu hóa performance
    - Hardening bảo mật
 
-## 🔧 Công Nghệ Sử Dụng
+## Công Nghệ Sử Dụng
 
 ### Infrastructure
 - **Hypervisor**: VMware ESXi 6.7
@@ -201,33 +201,7 @@ Repository này chứa tài liệu hướng dẫn chi tiết để xây dựng h
 - **Database**: PostgreSQL/MongoDB
 - **Monitoring**: Grafana Dashboards
 
-## 🎓 Lộ Trình Học Tập
-
-### 1. **Lộ trình Cơ bản** (1-2 tuần)
-- Bắt đầu với infrastructure basics
-- Học các khái niệm container
-- Deploy ứng dụng đơn giản
-- Hiểu monitoring cơ bản
-
-### 2. **Lộ trình Trung cấp** (2-3 tuần)
-- Thành thạo khái niệm Kubernetes
-- Xây dựng CI/CD pipelines
-- Cấu hình networking nâng cao
-- Triển khai security best practices
-
-### 3. **Lộ trình Nâng cao** (3-4 tuần)
-- Thiết kế hệ thống high-availability
-- Triển khai GitOps workflows
-- Thành thạo kỹ thuật troubleshooting
-- Xây dựng monitoring solutions tùy chỉnh
-
-### 4. **Lộ trình Chuyên gia** (4+ tuần)
-- Thiết kế giải pháp enterprise
-- Triển khai setup multi-cluster
-- Xây dựng custom operators
-- Thiết kế disaster recovery strategies
-
-## 🚀 Bắt Đầu Nhanh
+## Bắt Đầu Nhanh
 
 ### Yêu Cầu Tiên Quyết
 - Kiến thức Linux cơ bản
@@ -272,7 +246,7 @@ cp 05-config-templates/applications/portfolio/deployment.yaml ./
 kubectl apply -f deployment.yaml
 ```
 
-## 📊 Thống Kê Dự Án
+## Thống Kê Dự Án
 
 ### Độ Bao Phủ Tài Liệu
 - **Tổng số Files**: 25+ hướng dẫn chi tiết
@@ -293,7 +267,7 @@ kubectl apply -f deployment.yaml
 - **Best practices**: Khuyến nghị cấp enterprise
 - **Bảo mật**: Bao gồm hướng dẫn hardening
 
-## 🏆 Chỉ Số Thành Công
+## Chỉ Số Thành Công
 
 ### Độ Tin Cậy Infrastructure
 - **99.9% Uptime**: Đạt được thông qua cấu hình HA
@@ -313,7 +287,7 @@ kubectl apply -f deployment.yaml
 - **Logging**: Quản lý log tập trung
 - **Security**: Quét bảo mật liên tục
 
-## 🔐 Triển Khai Bảo Mật
+## Triển Khai Bảo Mật
 
 ### Bảo Mật Mạng
 - **Firewall**: Bảo vệ firewall đa tầng
@@ -333,7 +307,7 @@ kubectl apply -f deployment.yaml
 - **Access Control**: Nguyên tắc least privilege
 - **Audit Logging**: Audit trails toàn diện
 
-## 📈 Tối Ưu Hóa Performance
+## Tối Ưu Hóa Performance
 
 ### Quản Lý Tài Nguyên
 - **Auto-scaling**: Horizontal pod autoscaling
@@ -353,7 +327,7 @@ kubectl apply -f deployment.yaml
 - **Monitoring**: Giám sát performance
 - **Profiling**: Công cụ profiling ứng dụng
 
-## 🤝 Đóng Góp
+## Đóng Góp
 
 ### Cách Đóng Góp
 1. **Fork repository**
@@ -373,7 +347,7 @@ kubectl apply -f deployment.yaml
 - **Examples**: Cung cấp ví dụ hoạt động
 - **Testing**: Test tất cả configurations
 
-## 📞 Hỗ Trợ
+## Hỗ Trợ
 
 ### Hỗ Trợ Cộng Đồng
 - **Issues**: Sử dụng GitHub issues để báo lỗi
@@ -387,7 +361,7 @@ kubectl apply -f deployment.yaml
 - **Support**: Bảo trì và hỗ trợ liên tục
 - **Architecture**: Thiết kế kiến trúc tùy chỉnh
 
-## 🎯 Cải Tiến Tương Lai
+## Cải Tiến Tương Lai
 
 ### Tính Năng Dự Kiến
 - **Multi-cluster Management**: Cross-cluster deployments
@@ -403,7 +377,7 @@ kubectl apply -f deployment.yaml
 
 ---
 
-## 🎉 Tình Trạng Dự Án: **HOÀN THÀNH** ✅
+## Tình Trạng Dự Án: **HOÀN THÀNH**
 
 Dự án tài liệu này đã thành công đạt **100% hoàn thành** với các hướng dẫn toàn diện bao phủ tất cả khía cạnh xây dựng infrastructure server on-premise sẵn sàng production. Dự án cung cấp:
 
@@ -413,7 +387,7 @@ Dự án tài liệu này đã thành công đạt **100% hoàn thành** với c
 - **Tài liệu Toàn diện**: Hướng dẫn từng bước với examples
 - **Thư viện Template**: Configuration templates sẵn sàng sử dụng
 
-**Sẵn sàng Sử dụng Production** 🚀
+**Sẵn sàng Sử dụng Production**
 
 ---
 

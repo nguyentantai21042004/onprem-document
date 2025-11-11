@@ -96,9 +96,9 @@ Number of ports: 128 (default)
 
 **Security Settings:**
 ```
-├── Promiscuous mode: Reject ✅
-├── MAC address changes: Accept ✅
-└── Forged transmits: Accept ✅
+├── Promiscuous mode: Reject 
+├── MAC address changes: Accept 
+└── Forged transmits: Accept 
 ```
 
 **Giải thích từng option:**
@@ -106,9 +106,9 @@ Number of ports: 128 (default)
 - **MAC address changes: Accept** - VM có thể thay đổi MAC address (cần cho một số ứng dụng)
 - **Forged transmits: Accept** - VM có thể gửi packets với MAC address khác (cần cho virtualization)
 
-**⚠️ QUAN TRỌNG NHẤT:**
+**⚠ QUAN TRỌNG NHẤT:**
 ```
-"Add a physical network adapter" → KHÔNG TICK ✅
+"Add a physical network adapter" → KHÔNG TICK 
 ```
 **Giải thích:**
 - Physical network adapter là card mạng vật lý (vmnic0)
@@ -254,7 +254,7 @@ Network Adapter 2: DB-Network (LAN connection)
 CD/DVD Drive 1: Datastore ISO file → Browse → pfSense ISO
 ```
 
-**⚠️ QUAN TRỌNG - Network Adapters:**
+**⚠ QUAN TRỌNG - Network Adapters:**
 - **Network Adapter 1**: VM Network (kết nối WAN - ra internet)
 - **Network Adapter 2**: DB-Network (kết nối LAN - isolated network)
 - Thứ tự này quan trọng cho interface assignment
@@ -411,7 +411,7 @@ Do you want to revert to HTTP as the webConfigurator protocol? [y|n] → y
 
 #### Disable Firewall để truy cập Web Interface
 
-**⚠️ Vấn đề phổ biến:** Không thể truy cập web interface từ WAN
+**⚠ Vấn đề phổ biến:** Không thể truy cập web interface từ WAN
 
 **Nguyên nhân:**
 - pfSense mặc định block WAN access tới web interface
@@ -513,7 +513,7 @@ exit
 
 #### Bước 2: Tạo WAN Access Rules (Nếu cần)
 
-**⚠️ Cảnh báo:** Chỉ làm nếu thực sự cần truy cập WAN, không khuyến nghị cho production
+**⚠ Cảnh báo:** Chỉ làm nếu thực sự cần truy cập WAN, không khuyến nghị cho production
 
 **Từ Web Interface:**
 1. **Firewall → Rules → WAN**
@@ -536,7 +536,7 @@ exit
 1. **Firewall → Rules → LAN**
 2. **Kiểm tra có rule:**
    ```
-   ✅ Default allow LAN to any rule
+    Default allow LAN to any rule
    Action: Pass
    Source: LAN net
    Destination: Any
@@ -592,8 +592,8 @@ Description: Allow LAN to Any
 1. **Status → System Logs → Firewall**
 2. **Settings:**
    ```
-   ✅ Log firewall default blocks
-   ✅ Log packets matched by pflog
+    Log firewall default blocks
+    Log packets matched by pflog
    Log Level: Informational
    ```
 
@@ -747,19 +747,19 @@ ESXi Host (192.168.1.100)
 ## Kết luận
 
 ### Achievements
-✅ **Network Infrastructure:**
+ **Network Infrastructure:**
 - Isolated subnet cho database (172.16.1.0/24)
 - pfSense router kết nối các networks
 - Firewall protection giữa subnets
 - DHCP server cho automatic IP assignment
 
-✅ **Security:**
+ **Security:**
 - Network segmentation và isolation
 - Controlled access giữa subnets
 - Firewall rules cho traffic filtering
 - Anti-lockout protection
 
-✅ **Management:**
+ **Management:**
 - Web interface accessible
 - SSH access available
 - Console management functional
@@ -772,4 +772,4 @@ ESXi Host (192.168.1.100)
 - Implement backup procedures
 - Test disaster recovery scenarios
 
-**pfSense + ESXi network segmentation = Foundation hoàn thiện cho production infrastructure! 🚀** 
+**pfSense + ESXi network segmentation = Foundation hoàn thiện cho production infrastructure! ** 

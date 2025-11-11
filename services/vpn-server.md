@@ -14,16 +14,16 @@
 
 ### ✨ Tính năng chính của OVPM
 
-- 🖥️ **Command Line Interface (CLI)** - Quản lý hoàn toàn qua terminal
+- 🖥 **Command Line Interface (CLI)** - Quản lý hoàn toàn qua terminal
 - 🌐 **Web User Interface** - Giao diện web trực quan trên port 8080
 - 👥 **User Management** - Tạo, xóa, cập nhật VPN users với quyền admin
 - 🌍 **Network Management** - Quản lý mạng và routing cho VPN
 - 📁 **Client Profile Generation** - Tự động tạo file .ovpn cho clients
-- 🔄 **Import/Export/Backup** - Sao lưu và khôi phục cấu hình
-- 📊 **API Support** - REST và gRPC APIs cho automation
-- 📈 **Monitoring & Quota** - Giám sát và giới hạn băng thông
+-  **Import/Export/Backup** - Sao lưu và khôi phục cấu hình
+-  **API Support** - REST và gRPC APIs cho automation
+-  **Monitoring & Quota** - Giám sát và giới hạn băng thông
 
-### 🏗️ Kiến trúc OVPM
+###  Kiến trúc OVPM
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -39,13 +39,13 @@
                     └─────────────────┘
 ```
 
-### 🎯 Tại sao chọn OVPM cho DevOps?
+###  Tại sao chọn OVPM cho DevOps?
 
-- **🚀 Triển khai nhanh**: Setup VPN server trong vài phút thay vì hàng giờ cấu hình manual
+- ** Triển khai nhanh**: Setup VPN server trong vài phút thay vì hàng giờ cấu hình manual
 - **🎮 Quản lý dễ dàng**: Web interface + CLI cho mọi tác vụ quản lý
-- **🔐 Bảo mật enterprise**: PKI certificates, user authentication, network isolation
+- ** Bảo mật enterprise**: PKI certificates, user authentication, network isolation
 - **📱 Multi-platform**: Tạo .ovpn profiles cho Windows, macOS, iOS, Android
-- **🔧 DevOps-friendly**: APIs để tích hợp vào automation workflows
+- ** DevOps-friendly**: APIs để tích hợp vào automation workflows
 
 ---
 
@@ -92,7 +92,7 @@ sudo systemctl enable ovpmd
 sudo systemctl status ovpmd
 ```
 
-### ✅ Xác minh cài đặt thành công
+###  Xác minh cài đặt thành công
 
 ```bash
 # Kiểm tra OVPM version
@@ -143,12 +143,12 @@ sudo ovpm vpn update --net "10.9.0.0/24" --dns "192.168.1.1"
 sudo ovpm vpn update --port 1197 --hostname vpn.yourdomain.com
 ```
 
-### ⚠️ **Quan trọng: DNS Configuration trong OVPM**
+### ⚠ **Quan trọng: DNS Configuration trong OVPM**
 
 **🚨 OVPM chỉ hỗ trợ MỘT DNS server duy nhất:**
 
 ```bash
-# ✅ CÚ PHÁP ĐÚNG - Một DNS server
+#  CÚ PHÁP ĐÚNG - Một DNS server
 sudo ovpm vpn update --dns "192.168.1.1"
 sudo ovpm vpn update --dns "8.8.8.8"
 

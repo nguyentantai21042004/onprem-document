@@ -4,7 +4,7 @@
 
 Phần này cung cấp tài liệu toàn diện để thiết lập tầng infrastructure nền tảng cho server on-premise của bạn. Các hướng dẫn bao gồm quản lý phần cứng, cấu hình mạng, và tự động hóa hệ thống.
 
-## 🏗️ Tổng Quan Kiến Trúc
+##  Tổng Quan Kiến Trúc
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -47,64 +47,64 @@ Phần này cung cấp tài liệu toàn diện để thiết lập tầng infra
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Cấu Trúc Tài Liệu
+##  Cấu Trúc Tài Liệu
 
 ### 1. [Wake-on-LAN](wake-on-lan.md)
 **Tầng Quản lý Nguồn - Bắt đầu từ đây**
-- ✅ Cấu hình Wake-on-LAN cơ bản
-- ✅ Scripts tự động hóa cho macOS/Windows  
-- ✅ Quản lý nguồn từ xa và lập lịch
-- ✅ Tích hợp với systemd và cron jobs
-- ✅ Troubleshooting và debugging
-- ✅ Best practices cho môi trường production
+-  Cấu hình Wake-on-LAN cơ bản
+-  Scripts tự động hóa cho macOS/Windows  
+-  Quản lý nguồn từ xa và lập lịch
+-  Tích hợp với systemd và cron jobs
+-  Troubleshooting và debugging
+-  Best practices cho môi trường production
 
 **Yêu cầu tiên quyết**: Phần cứng hỗ trợ WoL
 
 ### 2. [ESXi VM Autostart](esxi-vm-autostart.md)
 **Tầng Quản lý VM - Tự động hóa Khởi động**
-- ✅ Cấu hình VM autostart trên ESXi
-- ✅ Tạo systemd services cho automation
-- ✅ Templates và configuration files
-- ✅ Monitoring và health checks
-- ✅ Quản lý startup sequence
-- ✅ Recovery procedures khi lỗi
+-  Cấu hình VM autostart trên ESXi
+-  Tạo systemd services cho automation
+-  Templates và configuration files
+-  Monitoring và health checks
+-  Quản lý startup sequence
+-  Recovery procedures khi lỗi
 
 **Yêu cầu tiên quyết**: ESXi server đã cài đặt và cấu hình
 
 ### 3. [ESXi pfSense Network Setup](ESXi-pfSense-Network-Setup.md)
 **Tầng Mạng - Network Segmentation với pfSense**
-- ✅ Tạo isolated virtual switches trong ESXi
-- ✅ Cài đặt và cấu hình pfSense router/firewall
-- ✅ Network segmentation và subnet isolation
-- ✅ Firewall rules và security configuration
-- ✅ Troubleshooting network connectivity
-- ✅ Production security best practices
+-  Tạo isolated virtual switches trong ESXi
+-  Cài đặt và cấu hình pfSense router/firewall
+-  Network segmentation và subnet isolation
+-  Firewall rules và security configuration
+-  Troubleshooting network connectivity
+-  Production security best practices
 
 **Yêu cầu tiên quyết**: ESXi server và kiến thức networking cơ bản
 
 ### 4. [Networking](networking.md)
 **Tầng Mạng - Kiến thức Nền tảng**
-- ✅ Khái niệm ESXi networking (vmnic, vSwitch)
-- ✅ Cấu hình port groups và VLANs
-- ✅ Network adapters và teaming
-- ✅ Traffic shaping và security policies
-- ✅ Distributed switches cho advanced setup
-- ✅ Performance tuning và optimization
+-  Khái niệm ESXi networking (vmnic, vSwitch)
+-  Cấu hình port groups và VLANs
+-  Network adapters và teaming
+-  Traffic shaping và security policies
+-  Distributed switches cho advanced setup
+-  Performance tuning và optimization
 
 **Yêu cầu tiên quyết**: Hiểu biết networking cơ bản
 
 ### 5. [Port Forwarding](port-forwarding.md)
 **Tầng Dịch vụ - Truy cập Bên ngoài**
-- ✅ Cấu hình router cho port forwarding
-- ✅ Expose services ra internet an toàn
-- ✅ Firewall rules và security practices
-- ✅ Dynamic DNS và domain management
-- ✅ SSL/TLS certificates và HTTPS
-- ✅ Monitoring và access logging
+-  Cấu hình router cho port forwarding
+-  Expose services ra internet an toàn
+-  Firewall rules và security practices
+-  Dynamic DNS và domain management
+-  SSL/TLS certificates và HTTPS
+-  Monitoring và access logging
 
 **Yêu cầu tiên quyết**: Quyền truy cập router configuration
 
-## 🎯 Lộ Trình Học Tập
+##  Lộ Trình Học Tập
 
 ### Lộ trình 1: Thiết lập Cơ bản (Cần thiết)
 1. **Nguồn** → [wake-on-lan.md](wake-on-lan.md) - Quản lý nguồn từ xa
@@ -133,7 +133,7 @@ Phần này cung cấp tài liệu toàn diện để thiết lập tầng infra
 **Thời gian ước tính**: 1-2 ngày
 **Cấp độ kỹ năng**: Nâng cao
 
-## 🚀 Tham Khảo Nhanh
+##  Tham Khảo Nhanh
 
 ### Các Lệnh Thiết Yếu
 ```bash
@@ -186,7 +186,7 @@ iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 192.168
 iptables -A FORWARD -p tcp -d 192.168.1.100 --dport 80 -j ACCEPT
 ```
 
-## 🔧 Templates Cấu hình
+##  Templates Cấu hình
 
 ### Wake-on-LAN Service Template
 ```systemd
@@ -251,7 +251,7 @@ esxcli network vswitch standard portgroup add -v vSwitch1 -p "VM Network 1"
 esxcli network vswitch standard portgroup set -v vSwitch1 -p "VM Network 1" --vlan-id 100
 ```
 
-## 🏆 Checklist Validation
+##  Checklist Validation
 
 ### Thiết lập Wake-on-LAN
 - [ ] BIOS/UEFI đã enable Wake-on-LAN
@@ -305,7 +305,7 @@ esxcli network vswitch standard portgroup set -v vSwitch1 -p "VM Network 1" --vl
 - Service availability monitoring
 - Security event monitoring
 
-## 📈 Tối Ưu Performance
+##  Tối Ưu Performance
 
 ### Quản lý Tài nguyên
 - Configure VM resource limits appropriately
@@ -325,7 +325,7 @@ esxcli network vswitch standard portgroup set -v vSwitch1 -p "VM Network 1" --vl
 - Implement proper error handling
 - Monitor automation success rates
 
-## 🔐 Best Practices Bảo mật
+##  Best Practices Bảo mật
 
 ### Network Security
 - Implement proper VLAN segmentation
@@ -345,7 +345,7 @@ esxcli network vswitch standard portgroup set -v vSwitch1 -p "VM Network 1" --vl
 - Monitor for suspicious activities
 - Regular log analysis
 
-## 📞 Hỗ trợ và Troubleshooting
+##  Hỗ trợ và Troubleshooting
 
 ### Vấn đề Thường gặp
 - Wake-on-LAN không hoạt động
@@ -361,7 +361,7 @@ esxcli network vswitch standard portgroup set -v vSwitch1 -p "VM Network 1" --vl
 - Router configuration verification
 - Security audit tools
 
-## 🎯 Bước Tiếp theo
+##  Bước Tiếp theo
 
 Sau khi hoàn thành phần Infrastructure này, tiếp tục với:
 1. **[02-Services](../02-services/index.md)** - Deploy core services

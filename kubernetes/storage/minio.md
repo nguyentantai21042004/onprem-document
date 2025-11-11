@@ -328,4 +328,4 @@ kubectl exec -it minio-0 -n minio-system -- mc ls local/test-bucket
 kubectl exec -it minio-0 -n minio-system -- mc admin info local
 ```
 
-Đó là setup đơn giản cho multi-node MinIO trong K8s! 🚀
+Đó là setup đơn giản cho multi-node MinIO trong K8s! 

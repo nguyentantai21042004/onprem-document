@@ -4,7 +4,7 @@
 
 Phần này cung cấp tài liệu toàn diện về cách triển khai một cụm Kubernetes sẵn sàng cho môi trường sản xuất trên hạ tầng tại chỗ của bạn. Các hướng dẫn được tổ chức theo trình tự logic từ thiết lập cơ bản đến quản lý nâng cao.
 
-## 🏗️ Tổng Quan Kiến Trúc
+##  Tổng Quan Kiến Trúc
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -36,75 +36,75 @@ Phần này cung cấp tài liệu toàn diện về cách triển khai một c�
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Cấu Trúc Tài Liệu
+##  Cấu Trúc Tài Liệu
 
 ### 1. [Thiết Lập Cụm](cluster-setup.md)
 **Lớp Nền Tảng - Bắt Đầu Từ Đây**
-- ✅ Chuẩn bị hệ thống và yêu cầu
-- ✅ Cài đặt container runtime (containerd)
-- ✅ Cài đặt Kubernetes với kubeadm
-- ✅ Cấu hình High Availability (3 master)
-- ✅ Thiết lập mạng và cấu hình CNI
-- ✅ Kiểm tra và xác thực cụm
+-  Chuẩn bị hệ thống và yêu cầu
+-  Cài đặt container runtime (containerd)
+-  Cài đặt Kubernetes với kubeadm
+-  Cấu hình High Availability (3 master)
+-  Thiết lập mạng và cấu hình CNI
+-  Kiểm tra và xác thực cụm
 
 **Yêu cầu tiên quyết**: Hoàn thành phần [01-Hạ tầng](../01-infrastructure/index.md)
 
 ### 2. [Các Khái Niệm Kubernetes](kubernetes-concepts.md)
 **Lớp Kiến Thức - Hiểu Biết Cốt Lõi**
-- ✅ Kiến thức cơ bản về cấu hình YAML
-- ✅ Cấu trúc và quản lý tài nguyên
-- ✅ Namespace và tổ chức tài nguyên
-- ✅ Labels, selectors, annotations
-- ✅ Quản lý cấu hình cơ bản
-- ✅ Thực hành và mẫu tốt nhất
+-  Kiến thức cơ bản về cấu hình YAML
+-  Cấu trúc và quản lý tài nguyên
+-  Namespace và tổ chức tài nguyên
+-  Labels, selectors, annotations
+-  Quản lý cấu hình cơ bản
+-  Thực hành và mẫu tốt nhất
 
 **Yêu cầu tiên quyết**: Đã thiết lập cụm cơ bản
 
 ### 3. [Quản Lý Workloads](workloads.md)
 **Lớp Ứng Dụng - Mô Hình Triển Khai**
-- ✅ Chiến lược triển khai và cập nhật rolling
-- ✅ Các loại Service và cân bằng tải
-- ✅ ConfigMap và cấu hình ứng dụng
-- ✅ Quản lý Secrets và bảo mật
-- ✅ Kiểm tra sức khỏe và giám sát
-- ✅ Quản lý mở rộng và tài nguyên
+-  Chiến lược triển khai và cập nhật rolling
+-  Các loại Service và cân bằng tải
+-  ConfigMap và cấu hình ứng dụng
+-  Quản lý Secrets và bảo mật
+-  Kiểm tra sức khỏe và giám sát
+-  Quản lý mở rộng và tài nguyên
 
 **Yêu cầu tiên quyết**: Hiểu các khái niệm Kubernetes
 
 ### 4. [Ingress & Mạng](ingress-networking.md)
 **Lớp Mạng - Truy Cập Từ Bên Ngoài**
-- ✅ Cài đặt ingress controller (NGINX)
-- ✅ Cấu hình DNS và domain
-- ✅ Quản lý chứng chỉ SSL/TLS
-- ✅ Chiến lược cân bằng tải
-- ✅ Chính sách mạng và bảo mật
-- ✅ Định tuyến nhiều host và theo đường dẫn
+-  Cài đặt ingress controller (NGINX)
+-  Cấu hình DNS và domain
+-  Quản lý chứng chỉ SSL/TLS
+-  Chiến lược cân bằng tải
+-  Chính sách mạng và bảo mật
+-  Định tuyến nhiều host và theo đường dẫn
 
 **Yêu cầu tiên quyết**: Hiểu về workloads
 
 ### 5. [Lưu Trữ & Tính Bền Vững](storage-persistence.md)
 **Lớp Dữ Liệu - Lưu Trữ Bền Vững**
-- ✅ Persistent Volumes và Claims
-- ✅ Storage class và provisioning
-- ✅ ConfigMap và dữ liệu cấu hình
-- ✅ Secrets và dữ liệu nhạy cảm
-- ✅ Chiến lược backup và khôi phục
-- ✅ Tối ưu hiệu năng
+-  Persistent Volumes và Claims
+-  Storage class và provisioning
+-  ConfigMap và dữ liệu cấu hình
+-  Secrets và dữ liệu nhạy cảm
+-  Chiến lược backup và khôi phục
+-  Tối ưu hiệu năng
 
 **Yêu cầu tiên quyết**: Đã triển khai workload cơ bản
 
 ### 6. [Quản Lý Rancher](rancher-management.md)
 **Lớp Quản Lý - Thao Tác Giao Diện**
-- ✅ Cài đặt Rancher server
-- ✅ Quản lý nhiều cụm
-- ✅ Xác thực người dùng và RBAC
-- ✅ Tổ chức project và namespace
-- ✅ Thiết lập giám sát và cảnh báo
-- ✅ Thực hành vận hành tốt
+-  Cài đặt Rancher server
+-  Quản lý nhiều cụm
+-  Xác thực người dùng và RBAC
+-  Tổ chức project và namespace
+-  Thiết lập giám sát và cảnh báo
+-  Thực hành vận hành tốt
 
 **Yêu cầu tiên quyết**: Cụm Kubernetes đã hoạt động
 
-## 🏆 Lộ Trình Học Tập
+##  Lộ Trình Học Tập
 
 ### Lộ trình 1: Khởi Động Nhanh (Cơ Bản)
 1. **Thiết lập** → [cluster-setup.md](cluster-setup.md) - Khởi động cụm
@@ -135,7 +135,7 @@ Phần này cung cấp tài liệu toàn diện về cách triển khai một c�
 **Ước lượng thời gian**: 2-3 ngày
 **Trình độ**: Nâng cao
 
-## 🚀 Tham Khảo Nhanh
+##  Tham Khảo Nhanh
 
 ### Lệnh Cơ Bản
 ```bash
@@ -222,7 +222,7 @@ spec:
               number: 80
 ```
 
-## 🔧 Mẫu Cấu Hình
+##  Mẫu Cấu Hình
 
 ### Mẫu Namespace
 ```yaml
@@ -312,7 +312,7 @@ spec:
 - GitOps cho quản lý cấu hình
 - Pipeline tích hợp Harbor registry
 
-## 📈 Tối Ưu Hiệu Năng
+##  Tối Ưu Hiệu Năng
 
 ### Quản Lý Tài Nguyên
 - Đặt requests và limits hợp lý
@@ -352,7 +352,7 @@ spec:
 - Cấu hình firewall hợp lý
 - Giám sát lưu lượng mạng
 
-## ☎️ Hỗ Trợ & Khắc Phục Sự Cố
+## ☎ Hỗ Trợ & Khắc Phục Sự Cố
 
 ### Vấn Đề Thường Gặp
 - Lỗi lên lịch pod
@@ -368,7 +368,7 @@ spec:
 - Rancher UI để debug trực quan
 - Prometheus để giám sát
 
-## 🎯 Bước Tiếp Theo
+##  Bước Tiếp Theo
 
 Sau khi hoàn thành phần Kubernetes, hãy tiếp tục:
 1. **[04-CI/CD](../04-cicd/index.md)** - Thiết lập pipeline tự động triển khai

@@ -4,7 +4,7 @@
 
 This section provides comprehensive documentation for implementing Continuous Integration and Continuous Deployment (CI/CD) pipelines for your on-premise Kubernetes infrastructure. The guides cover Jenkins setup, pipeline automation, and GitOps practices.
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -55,53 +55,53 @@ This section provides comprehensive documentation for implementing Continuous In
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Documentation Structure
+##  Documentation Structure
 
 ### 1. [Jenkins Setup](jenkins-setup.md)
 **Foundation Layer - CI/CD Platform**
-- ✅ Jenkins installation on Kubernetes
-- ✅ Service account and RBAC configuration
-- ✅ Plugin installation and configuration
-- ✅ Security and authentication setup
-- ✅ Integration with Git repositories
-- ✅ Webhook configuration for automation
+-  Jenkins installation on Kubernetes
+-  Service account and RBAC configuration
+-  Plugin installation and configuration
+-  Security and authentication setup
+-  Integration with Git repositories
+-  Webhook configuration for automation
 
 **Prerequisites**: Functional Kubernetes cluster from [03-Kubernetes](../03-kubernetes/index.md)
 
 ### 2. [Pipeline Configuration](pipeline-configuration.md)
 **Pipeline Layer - Automated Workflows**
-- ✅ Jenkinsfile structure and syntax
-- ✅ Multi-stage pipeline design
-- ✅ Build and test automation
-- ✅ Docker image building and scanning
-- ✅ Deployment strategies
-- ✅ Rollback mechanisms
+-  Jenkinsfile structure and syntax
+-  Multi-stage pipeline design
+-  Build and test automation
+-  Docker image building and scanning
+-  Deployment strategies
+-  Rollback mechanisms
 
 **Prerequisites**: Jenkins installation completed
 
 ### 3. [GitOps Workflows](gitops-workflows.md)
 **GitOps Layer - Configuration Management**
-- ✅ Git-based configuration management
-- ✅ ArgoCD setup and configuration
-- ✅ Automated deployment workflows
-- ✅ Environment promotion strategies
-- ✅ Configuration drift detection
-- ✅ Disaster recovery procedures
+-  Git-based configuration management
+-  ArgoCD setup and configuration
+-  Automated deployment workflows
+-  Environment promotion strategies
+-  Configuration drift detection
+-  Disaster recovery procedures
 
 **Prerequisites**: Understanding of pipeline concepts
 
 ### 4. [Security and Compliance](security-compliance.md)
 **Security Layer - Secure Pipelines**
-- ✅ Secret management in pipelines
-- ✅ Container image security scanning
-- ✅ Vulnerability assessment
-- ✅ Code quality gates
-- ✅ Compliance checking
-- ✅ Audit logging and monitoring
+-  Secret management in pipelines
+-  Container image security scanning
+-  Vulnerability assessment
+-  Code quality gates
+-  Compliance checking
+-  Audit logging and monitoring
 
 **Prerequisites**: Basic pipeline setup
 
-## 🎯 Learning Paths
+##  Learning Paths
 
 ### Path 1: Basic CI/CD (Essential)
 1. **Setup** → [jenkins-setup.md](jenkins-setup.md) - Install Jenkins
@@ -130,7 +130,7 @@ This section provides comprehensive documentation for implementing Continuous In
 **Time Estimate**: 5-7 days
 **Skill Level**: Expert
 
-## 🚀 Quick Reference
+##  Quick Reference
 
 ### Essential Commands
 ```bash
@@ -244,7 +244,7 @@ pipeline {
 }
 ```
 
-## 🔧 Configuration Templates
+##  Configuration Templates
 
 ### Jenkins Service Account
 ```yaml
@@ -329,7 +329,7 @@ spec:
     - CreateNamespace=true
 ```
 
-## 🏆 Validation Checklist
+##  Validation Checklist
 
 ### Jenkins Setup
 - [ ] Jenkins is running in Kubernetes
@@ -383,7 +383,7 @@ spec:
 - Resource quotas and limits
 - Service mesh integration
 
-## 📈 Performance Optimization
+##  Performance Optimization
 
 ### Pipeline Optimization
 - Parallel stage execution
@@ -403,7 +403,7 @@ spec:
 - Deployment frequency tracking
 - Mean time to recovery (MTTR)
 
-## 🔐 Security Best Practices
+##  Security Best Practices
 
 ### Access Control
 - Role-based access control (RBAC)
@@ -423,7 +423,7 @@ spec:
 - Runtime security monitoring
 - Network security policies
 
-## 📞 Support and Troubleshooting
+##  Support and Troubleshooting
 
 ### Common Issues
 - Jenkins pod startup failures
@@ -439,7 +439,7 @@ spec:
 - Resource utilization metrics
 - Security audit logs
 
-## 🎯 Next Steps
+##  Next Steps
 
 After completing this CI/CD section, proceed to:
 1. **[05-Monitoring](../05-monitoring/index.md)** - Advanced monitoring and observability

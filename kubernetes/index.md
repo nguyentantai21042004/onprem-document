@@ -4,7 +4,7 @@
 
 This section provides comprehensive documentation for implementing a production-ready Kubernetes cluster on your on-premise infrastructure. The guides are organized to follow a logical progression from basic setup to advanced management.
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -36,75 +36,75 @@ This section provides comprehensive documentation for implementing a production-
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Documentation Structure
+##  Documentation Structure
 
 ### 1. [Cluster Setup](cluster-setup.md)
 **Foundation Layer - Start Here**
-- ✅ System preparation and requirements
-- ✅ Container runtime installation (containerd)
-- ✅ Kubernetes installation with kubeadm
-- ✅ High availability configuration (3 masters)
-- ✅ Network setup and CNI configuration
-- ✅ Cluster validation and testing
+-  System preparation and requirements
+-  Container runtime installation (containerd)
+-  Kubernetes installation with kubeadm
+-  High availability configuration (3 masters)
+-  Network setup and CNI configuration
+-  Cluster validation and testing
 
 **Prerequisites**: Completed [01-Infrastructure](../01-infrastructure/index.md) setup
 
 ### 2. [Kubernetes Concepts](kubernetes-concepts.md)
 **Knowledge Layer - Core Understanding**
-- ✅ YAML configuration fundamentals
-- ✅ Resource structure and management
-- ✅ Namespaces and resource organization
-- ✅ Labels, selectors, and annotations
-- ✅ Configuration management basics
-- ✅ Best practices and patterns
+-  YAML configuration fundamentals
+-  Resource structure and management
+-  Namespaces and resource organization
+-  Labels, selectors, and annotations
+-  Configuration management basics
+-  Best practices and patterns
 
 **Prerequisites**: Basic cluster setup completed
 
 ### 3. [Workloads Management](workloads.md)
 **Application Layer - Deployment Patterns**
-- ✅ Deployment strategies and rolling updates
-- ✅ Service types and load balancing
-- ✅ ConfigMaps and application configuration
-- ✅ Secrets management and security
-- ✅ Health checks and monitoring
-- ✅ Scaling and resource management
+-  Deployment strategies and rolling updates
+-  Service types and load balancing
+-  ConfigMaps and application configuration
+-  Secrets management and security
+-  Health checks and monitoring
+-  Scaling and resource management
 
 **Prerequisites**: Understanding of Kubernetes concepts
 
 ### 4. [Ingress and Networking](ingress-networking.md)
 **Network Layer - External Access**
-- ✅ Ingress controller setup (NGINX)
-- ✅ DNS and domain configuration
-- ✅ SSL/TLS certificate management
-- ✅ Load balancing strategies
-- ✅ Network policies and security
-- ✅ Multi-host and path-based routing
+-  Ingress controller setup (NGINX)
+-  DNS and domain configuration
+-  SSL/TLS certificate management
+-  Load balancing strategies
+-  Network policies and security
+-  Multi-host and path-based routing
 
 **Prerequisites**: Workloads understanding
 
 ### 5. [Storage and Persistence](storage-persistence.md)
 **Data Layer - Persistent Storage**
-- ✅ Persistent Volumes and Claims
-- ✅ Storage classes and provisioning
-- ✅ ConfigMaps and configuration data
-- ✅ Secrets and sensitive data
-- ✅ Backup and recovery strategies
-- ✅ Performance optimization
+-  Persistent Volumes and Claims
+-  Storage classes and provisioning
+-  ConfigMaps and configuration data
+-  Secrets and sensitive data
+-  Backup and recovery strategies
+-  Performance optimization
 
 **Prerequisites**: Basic workload deployment
 
 ### 6. [Rancher Management](rancher-management.md)
 **Management Layer - GUI Operations**
-- ✅ Rancher server installation
-- ✅ Multi-cluster management
-- ✅ User authentication and RBAC
-- ✅ Project and namespace organization
-- ✅ Monitoring and alerting setup
-- ✅ Operational best practices
+-  Rancher server installation
+-  Multi-cluster management
+-  User authentication and RBAC
+-  Project and namespace organization
+-  Monitoring and alerting setup
+-  Operational best practices
 
 **Prerequisites**: Functional Kubernetes cluster
 
-## 🎯 Learning Paths
+##  Learning Paths
 
 ### Path 1: Quick Start (Essential)
 1. **Setup** → [cluster-setup.md](cluster-setup.md) - Get cluster running
@@ -135,7 +135,7 @@ This section provides comprehensive documentation for implementing a production-
 **Time Estimate**: 2-3 days
 **Skill Level**: Advanced
 
-## 🚀 Quick Reference
+##  Quick Reference
 
 ### Essential Commands
 ```bash
@@ -222,7 +222,7 @@ spec:
               number: 80
 ```
 
-## 🔧 Configuration Templates
+##  Configuration Templates
 
 ### Namespace Template
 ```yaml
@@ -265,7 +265,7 @@ spec:
   - Egress
 ```
 
-## 🏆 Validation Checklist
+##  Validation Checklist
 
 ### Cluster Health
 - [ ] All nodes are Ready
@@ -312,7 +312,7 @@ spec:
 - GitOps workflows for configuration management
 - Pipeline integration with Harbor registry
 
-## 📈 Performance Optimization
+##  Performance Optimization
 
 ### Resource Management
 - Set appropriate resource requests and limits
@@ -332,7 +332,7 @@ spec:
 - Implement proper load balancing
 - Monitor network performance
 
-## 🔐 Security Best Practices
+##  Security Best Practices
 
 ### Access Control
 - Implement RBAC (Role-Based Access Control)
@@ -352,7 +352,7 @@ spec:
 - Implement proper firewall rules
 - Monitor network traffic
 
-## 📞 Support and Troubleshooting
+##  Support and Troubleshooting
 
 ### Common Issues
 - Pod scheduling problems
@@ -368,7 +368,7 @@ spec:
 - Rancher UI for visual debugging
 - Prometheus metrics for monitoring
 
-## 🎯 Next Steps
+##  Next Steps
 
 After completing this Kubernetes section, proceed to:
 1. **[04-CI/CD](../04-cicd/index.md)** - Set up automated deployment pipelines

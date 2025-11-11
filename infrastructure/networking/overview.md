@@ -51,7 +51,7 @@ Internet ──► Switch vật lý ──► vmnic0 ──► ESXi kernel ─�
 VM ──► vSwitch ──► ESXi kernel ──► vmnic0 ──► Switch vật lý ──► Internet
 ```
 
-### 📊 Thông tin Physical NIC (vmnic)
+###  Thông tin Physical NIC (vmnic)
 
 #### Xem thông tin vmnic:
 ```bash
@@ -74,7 +74,7 @@ Name    PCI Device    Driver  Link  Speed  MAC Address
 vmnic0  0000:02:00.0  r8168   Up    1000   00:e0:25:30:50:7b
 ```
 
-### 🎯 Thông số quan trọng:
+###  Thông số quan trọng:
 
 - **Driver (r8168)**: Phần mềm điều khiển hardware
 - **MAC Address**: Địa chỉ vật lý duy nhất (00:e0:25:30:50:7b)
@@ -98,7 +98,7 @@ vmnic0  0000:02:00.0  r8168   Up    1000   00:e0:25:30:50:7b
 
 ## Virtual Switch (vSwitch)
 
-### 🔄 vSwitch hoạt động như thế nào?
+###  vSwitch hoạt động như thế nào?
 
 **vSwitch = Switch ảo bên trong ESXi**, hoạt động giống switch vật lý:
 
@@ -120,7 +120,7 @@ vmnic0  0000:02:00.0  r8168   Up    1000   00:e0:25:30:50:7b
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 🏗️ vSwitch Architecture chi tiết:
+###  vSwitch Architecture chi tiết:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -153,7 +153,7 @@ vmnic0  0000:02:00.0  r8168   Up    1000   00:e0:25:30:50:7b
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 🎯 Chức năng của vSwitch:
+###  Chức năng của vSwitch:
 
 1. **Kết nối các VM với nhau** (internal communication)
 2. **Kết nối VM ra ngoài** (thông qua uplink)
@@ -213,7 +213,7 @@ VM1 ──► vSwitch Port 1 ──► Switching Logic ──► Uplink Port ─
 
 ## Port Groups
 
-### 🏷️ Port Group là gì?
+### 🏷 Port Group là gì?
 
 **Port Group = Container chứa các policy cho một nhóm ports**
 
@@ -272,7 +272,7 @@ vSwitch0
     └── VM-Dev-Environment
 ```
 
-### 🔧 Cấu hình Port Groups:
+###  Cấu hình Port Groups:
 
 #### 1. Tạo Port Group qua ESXi Web UI:
 ```
@@ -291,7 +291,7 @@ esxcli network vswitch standard portgroup set -p "Production-PG" -v 20
 esxcli network vswitch standard portgroup list
 ```
 
-### 🛡️ Security Policies trong Port Groups:
+### 🛡 Security Policies trong Port Groups:
 
 #### 1. Promiscuous Mode:
 - **Accept**: VM có thể nhận tất cả traffic trên network segment
@@ -312,7 +312,7 @@ esxcli network vswitch standard portgroup list
 
 ## Network Configuration
 
-### 🔧 Cấu hình cơ bản
+###  Cấu hình cơ bản
 
 #### 1. Tạo vSwitch mới:
 ```bash
@@ -348,7 +348,7 @@ esxcli network vswitch standard portgroup set -p "VLAN-100" -v 100
 esxcli network vswitch standard portgroup set -p "Trunk-PG" -v 4095
 ```
 
-### 📊 Network Monitoring
+###  Network Monitoring
 
 #### 1. Xem network statistics:
 ```bash
@@ -440,7 +440,7 @@ vmkping -I vmk0 -S vlan192.168.1.1 192.168.1.100
 # (This needs to be done on physical switch)
 ```
 
-### 🛠️ Network Diagnostic Tools
+###  Network Diagnostic Tools
 
 #### 1. ESXi built-in tools:
 ```bash

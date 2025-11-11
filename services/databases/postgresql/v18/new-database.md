@@ -63,16 +63,16 @@ Hướng dẫn này sẽ giúp bạn tạo một database PostgreSQL production-
 
 | Quyền | owner | api | dev | readonly |
 |-------|:-----:|:---:|:---:|:--------:|
-| SELECT | ✅ | ✅ | ✅ | ✅ |
-| INSERT | ✅ | ✅ | ✅ | ❌ |
-| UPDATE | ✅ | ✅ | ✅ | ❌ |
-| DELETE | ✅ | ✅ | ✅ | ❌ |
-| TRUNCATE | ✅ | ❌ | ✅ | ❌ |
-| CREATE TABLE | ✅ | ❌ | ✅ | ❌ |
-| DROP TABLE | ✅ | ❌ | ✅ | ❌ |
-| ALTER TABLE | ✅ | ❌ | ✅ | ❌ |
-| CREATE INDEX | ✅ | ❌ | ✅ | ❌ |
-| CREATE/DROP DB | ✅* | ❌ | ❌ | ❌ |
+| SELECT |  |  |  |  |
+| INSERT |  |  |  | ❌ |
+| UPDATE |  |  |  | ❌ |
+| DELETE |  |  |  | ❌ |
+| TRUNCATE |  | ❌ |  | ❌ |
+| CREATE TABLE |  | ❌ |  | ❌ |
+| DROP TABLE |  | ❌ |  | ❌ |
+| ALTER TABLE |  | ❌ |  | ❌ |
+| CREATE INDEX |  | ❌ |  | ❌ |
+| CREATE/DROP DB | * | ❌ | ❌ | ❌ |
 | Max Connections | 10 | 100 | 30 | 50 |
 | **Use Case** | Migration | Prod API | Dev/Test | Reports |
 
@@ -402,7 +402,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public
 -- Dev có thể CREATE/DROP table nhưng KHÔNG thể xóa database
 ```
 
-**✅ Checkpoint 4:** User `smap_dev` có đầy đủ quyền để test và phát triển
+** Checkpoint 4:** User `smap_dev` có đầy đủ quyền để test và phát triển
 
 ---
 
@@ -628,7 +628,7 @@ sudo systemctl status postgresql
 sudo tail -50 /var/log/postgresql/postgresql-18-main.log
 ```
 
-**✅ Checkpoint 6:** pg_hba.conf đã được cấu hình đúng và PostgreSQL đã reload
+** Checkpoint 6:** pg_hba.conf đã được cấu hình đúng và PostgreSQL đã reload
 
 ---
 
@@ -651,7 +651,7 @@ SELECT current_database(), current_user, session_user;
 -- Liệt kê databases (chỉ thấy smap)
 \l
 
--- Kết quả mong đợi: CHỈ thấy database 'smap' ✅
+-- Kết quả mong đợi: CHỈ thấy database 'smap' 
 
 -- Test quyền tạo table
 CREATE TABLE owner_test (
@@ -676,7 +676,7 @@ DROP TABLE owner_test;
 \q
 ```
 
-**Kết quả mong đợi:** ✅ Tất cả lệnh đều thành công
+**Kết quả mong đợi:**  Tất cả lệnh đều thành công
 
 #### B. Test kết nối vào postgres (phải BỊ TỪ CHỐI)
 
@@ -690,7 +690,7 @@ psql: error: connection to server at "localhost" (127.0.0.1), port 5432 failed:
 FATAL: pg_hba.conf rejects connection for host "127.0.0.1", user "smap_owner", database "postgres"
 ```
 
-✅ **ĐÚNG!** Owner bị chặn không vào được database khác
+ **ĐÚNG!** Owner bị chặn không vào được database khác
 
 ---
 
@@ -709,7 +709,7 @@ SELECT current_database(), current_user;
 
 -- Test INSERT (phải OK)
 CREATE TABLE IF NOT EXISTS api_test (id SERIAL PRIMARY KEY, name VARCHAR(100));
--- ⚠️ Nếu table chưa có, tạm dùng owner để tạo trước
+-- ⚠ Nếu table chưa có, tạm dùng owner để tạo trước
 
 INSERT INTO api_test (name) VALUES ('API Test 1');
 
@@ -742,7 +742,7 @@ ALTER TABLE api_test ADD COLUMN description TEXT;
 ```
 
 **Tóm tắt kết quả:**
-- ✅ SELECT, INSERT, UPDATE, DELETE: OK
+-  SELECT, INSERT, UPDATE, DELETE: OK
 - ❌ CREATE TABLE, DROP TABLE, TRUNCATE, ALTER TABLE: BỊ TỪ CHỐI
 
 ---
@@ -794,7 +794,7 @@ DROP DATABASE smap;
 ```
 
 **Tóm tắt kết quả:**
-- ✅ Tất cả CRUD và DDL operations: OK
+-  Tất cả CRUD và DDL operations: OK
 - ❌ DROP DATABASE: BỊ TỪ CHỐI
 
 ---
@@ -840,7 +840,7 @@ TRUNCATE users;
 ```
 
 **Tóm tắt kết quả:**
-- ✅ SELECT: OK
+-  SELECT: OK
 - ❌ INSERT, UPDATE, DELETE, CREATE, DROP, TRUNCATE: TẤT CẢ BỊ TỪ CHỐI
 
 ---
@@ -884,11 +884,11 @@ TRUNCATE users;
 - Password: `smap_readonly@2025`
 
 3. Kiểm tra từng connection:
-   - ✅ Tất cả đều kết nối thành công
-   - ✅ Trong cây Databases, CHỈ thấy `smap`
-   - ✅ KHÔNG thấy `postgres`, `template0`, `template1`
+   -  Tất cả đều kết nối thành công
+   -  Trong cây Databases, CHỈ thấy `smap`
+   -  KHÔNG thấy `postgres`, `template0`, `template1`
 
-**✅ Checkpoint 7:** Tất cả 4 users hoạt động đúng như thiết kế
+** Checkpoint 7:** Tất cả 4 users hoạt động đúng như thiết kế
 
 ---
 

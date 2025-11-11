@@ -45,11 +45,11 @@ ConfigMap + Secret (Configuration)
 - Manual pod management complexity
 
 #### Deployment Benefits
-- ✅ **Self-healing**: Automatic pod recreation on failure
-- ✅ **Scaling**: Easy horizontal scaling
-- ✅ **Rolling updates**: Zero-downtime deployments
-- ✅ **Rollback**: Quick reversion to previous versions
-- ✅ **Declarative management**: Define desired state
+-  **Self-healing**: Automatic pod recreation on failure
+-  **Scaling**: Easy horizontal scaling
+-  **Rolling updates**: Zero-downtime deployments
+-  **Rollback**: Quick reversion to previous versions
+-  **Declarative management**: Define desired state
 
 ### Deployment Architecture
 

@@ -4,7 +4,7 @@
 
 Phần này cung cấp tài liệu toàn diện để triển khai các dịch vụ cốt lõi trên infrastructure on-premise của bạn. Các hướng dẫn bao gồm VPN, databases, container registry, và monitoring stack hoàn chỉnh.
 
-## 🏗️ Tổng Quan Kiến Trúc
+##  Tổng Quan Kiến Trúc
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -47,64 +47,64 @@ Phần này cung cấp tài liệu toàn diện để triển khai các dịch v
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Cấu Trúc Tài Liệu
+##  Cấu Trúc Tài Liệu
 
 ### 1. [VPN Server](vpn-server.md)
 **Tầng Bảo mật - Truy cập An toàn**
-- ✅ Cài đặt OpenVPN server với OVPM tool
-- ✅ Web interface cho user management
-- ✅ Certificate management tự động
-- ✅ User authentication và authorization
-- ✅ Network routing và firewall configuration
-- ✅ Performance tuning và monitoring
+-  Cài đặt OpenVPN server với OVPM tool
+-  Web interface cho user management
+-  Certificate management tự động
+-  User authentication và authorization
+-  Network routing và firewall configuration
+-  Performance tuning và monitoring
 
 **Yêu cầu tiên quyết**: Ubuntu server với public IP
 
 ### 2. [MongoDB Database](database-mongodb.md)
 **Tầng Dữ liệu - NoSQL High Availability**
-- ✅ MongoDB replica set với 3 nodes
-- ✅ Automatic failover và recovery
-- ✅ Data replication và consistency
-- ✅ Backup strategies và restore procedures
-- ✅ Performance monitoring và optimization
-- ✅ Security hardening và authentication
+-  MongoDB replica set với 3 nodes
+-  Automatic failover và recovery
+-  Data replication và consistency
+-  Backup strategies và restore procedures
+-  Performance monitoring và optimization
+-  Security hardening và authentication
 
 **Yêu cầu tiên quyết**: 3 Ubuntu servers cho HA setup
 
 ### 3. [PostgreSQL Database](database-postgresql.md)
 **Tầng Dữ liệu - SQL High Availability**
-- ✅ PostgreSQL primary-standby với repmgr
-- ✅ Automatic failover với witness node
-- ✅ Streaming replication configuration
-- ✅ Connection pooling với pgbouncer
-- ✅ Backup automation với pg_dump
-- ✅ Performance tuning và monitoring
+-  PostgreSQL primary-standby với repmgr
+-  Automatic failover với witness node
+-  Streaming replication configuration
+-  Connection pooling với pgbouncer
+-  Backup automation với pg_dump
+-  Performance tuning và monitoring
 
 **Yêu cầu tiên quyết**: 3 Ubuntu servers cho cluster setup
 
 ### 4. [Harbor Container Registry](container-registry.md)
 **Tầng Container - Image Management**
-- ✅ Harbor installation với Docker Compose
-- ✅ RBAC và project management
-- ✅ Container image vulnerability scanning
-- ✅ Helm chart repository support
-- ✅ Docker registry API compatibility
-- ✅ Integration với Kubernetes clusters
+-  Harbor installation với Docker Compose
+-  RBAC và project management
+-  Container image vulnerability scanning
+-  Helm chart repository support
+-  Docker registry API compatibility
+-  Integration với Kubernetes clusters
 
 **Yêu cầu tiên quyết**: Docker và Docker Compose
 
 ### 5. [Monitoring Setup](monitoring-setup.md)
 **Tầng Giám sát - Observability Stack**
-- ✅ Prometheus cho metrics collection
-- ✅ Grafana dashboards và visualization
-- ✅ Alertmanager cho notification routing
-- ✅ Node Exporter cho system metrics
-- ✅ Custom dashboards cho services
-- ✅ Alert rules và notification channels
+-  Prometheus cho metrics collection
+-  Grafana dashboards và visualization
+-  Alertmanager cho notification routing
+-  Node Exporter cho system metrics
+-  Custom dashboards cho services
+-  Alert rules và notification channels
 
 **Yêu cầu tiên quyết**: Services đã deployed để monitor
 
-## 🎯 Lộ Trình Triển Khai
+##  Lộ Trình Triển Khai
 
 ### Giai đoạn 1: Dịch vụ Cốt lõi (Ngày 1-2)
 1. **Bảo mật** → [vpn-server.md](vpn-server.md) - Thiết lập truy cập an toàn
@@ -133,7 +133,7 @@ Phần này cung cấp tài liệu toàn diện để triển khai các dịch v
 **Thời gian ước tính**: Ongoing
 **Cấp độ kỹ năng**: Expert
 
-## 🚀 Tham Khảo Nhanh
+##  Tham Khảo Nhanh
 
 ### Địa chỉ IP Services
 ```bash
@@ -198,7 +198,7 @@ curl http://192.168.1.206:9090/-/healthy
 curl http://192.168.1.207:3000/api/health
 ```
 
-## 🔧 Service Endpoints
+##  Service Endpoints
 
 ### VPN Server Configuration
 ```bash
@@ -250,7 +250,7 @@ docker push harbor.ngtantai.pro/myproject/myapp:latest
 docker pull harbor.ngtantai.pro/myproject/myapp:latest
 ```
 
-## 🏆 Checklist Validation
+##  Checklist Validation
 
 ### VPN Server
 - [ ] OpenVPN server đang chạy
@@ -312,7 +312,7 @@ docker pull harbor.ngtantai.pro/myproject/myapp:latest
 - VPN cho secure CI/CD access
 - Monitoring cho pipeline health
 
-## 📈 Tối Ưu Performance
+##  Tối Ưu Performance
 
 ### Database Optimization
 ```sql
@@ -362,7 +362,7 @@ scrape_configs:
     scrape_interval: 5s
 ```
 
-## 🔐 Best Practices Bảo mật
+##  Best Practices Bảo mật
 
 ### Network Security
 ```bash
@@ -409,7 +409,7 @@ security:
   trivy: true
 ```
 
-## 📞 Hỗ trợ và Troubleshooting
+##  Hỗ trợ và Troubleshooting
 
 ### Vấn đề Thường gặp
 
@@ -470,7 +470,7 @@ systemctl restart postgresql
 docker-compose -f harbor.yml restart
 ```
 
-## 🎯 Bước Tiếp theo
+##  Bước Tiếp theo
 
 Sau khi hoàn thành phần Services này, tiếp tục với:
 1. **[03-Kubernetes](../03-kubernetes/index.md)** - Container orchestration platform

@@ -12,7 +12,7 @@
 
 Sau khi Wake-on-LAN thành công, bước tiếp theo là đảm bảo các VM và services quan trọng tự động khởi động. Hướng dẫn này tập trung chi tiết vào việc **tạo systemd service** để tự động chạy các script .sh khi VM khởi động.
 
-### 🎯 Mục tiêu
+###  Mục tiêu
 
 Khi bật server ESXi bằng Wake-on-LAN, cần đảm bảo:
 1. **Các máy ảo quan trọng** được khởi động tự động trong ESXi
@@ -22,7 +22,7 @@ Khi bật server ESXi bằng Wake-on-LAN, cần đảm bảo:
 
 ## Autostart VM trong ESXi
 
-### ✅ Thiết lập Autostart trong ESXi
+###  Thiết lập Autostart trong ESXi
 
 #### Truy cập ESXi Web Interface:
 ```
@@ -33,9 +33,9 @@ https://<IP-server>
 **Host → Manage → System → Autostart**
 
 #### Cấu hình:
-- ✅ **Enable Autostart**
-- ✅ **Chọn VMs** cần tự động khởi động
-- ⚙️ **Thiết lập delay** giữa các VM (khuyến nghị: 30-60 giây)
+-  **Enable Autostart**
+-  **Chọn VMs** cần tự động khởi động
+-  **Thiết lập delay** giữa các VM (khuyến nghị: 30-60 giây)
 
 #### Advanced Configuration:
 ```bash
@@ -72,9 +72,9 @@ vim-cmd hostsvc/autostartmanager/update_autostartentry [vmid] PowerOn 120 system
 └── database-service.service      # Service database
 ```
 
-### 🛠️ Bước 1: Tạo Script .sh
+###  Bước 1: Tạo Script .sh
 
-#### 📄 Template cơ bản cho file .sh
+####  Template cơ bản cho file .sh
 
 ```bash
 sudo nano /usr/local/bin/start-services.sh
@@ -105,7 +105,7 @@ log_message() {
 # Function: Check if service is running
 check_service() {
     if systemctl is-active --quiet $1; then
-        log_message "✅ Service $1 is running"
+        log_message " Service $1 is running"
         return 0
     else
         log_message "❌ Service $1 is not running"
@@ -115,9 +115,9 @@ check_service() {
 
 # Function: Start service with error handling
 start_service() {
-    log_message "🔄 Starting service: $1"
+    log_message " Starting service: $1"
     if systemctl start $1; then
-        log_message "✅ Successfully started: $1"
+        log_message " Successfully started: $1"
     else
         log_message "❌ Failed to start: $1"
         return 1
@@ -139,13 +139,13 @@ wait_for_network() {
         ((count++))
     done
     
-    log_message "✅ Network is ready"
+    log_message " Network is ready"
     return 0
 }
 
 # Main execution
 main() {
-    log_message "🚀 Starting ${SCRIPT_NAME} script"
+    log_message " Starting ${SCRIPT_NAME} script"
     
     # Create PID file
     echo $$ > ${PID_FILE}
@@ -170,16 +170,16 @@ main() {
     start_service "redis"
     
     # Example: Run custom commands
-    log_message "🔧 Running custom initialization..."
+    log_message " Running custom initialization..."
     
     # Mount network drives
     if [ -f "/etc/fstab" ]; then
-        mount -a && log_message "✅ Network drives mounted" || log_message "❌ Failed to mount drives"
+        mount -a && log_message " Network drives mounted" || log_message "❌ Failed to mount drives"
     fi
     
     # Start VPN if exists
     if [ -f "/usr/local/bin/start-vpn.sh" ]; then
-        /usr/local/bin/start-vpn.sh && log_message "✅ VPN started" || log_message "❌ VPN failed"
+        /usr/local/bin/start-vpn.sh && log_message " VPN started" || log_message "❌ VPN failed"
     fi
     
     # Health check
@@ -189,7 +189,7 @@ main() {
     
     # Cleanup
     rm -f ${PID_FILE}
-    log_message "✅ ${SCRIPT_NAME} completed successfully"
+    log_message " ${SCRIPT_NAME} completed successfully"
 }
 
 # Error handling
@@ -220,9 +220,9 @@ sudo chmod +x /usr/local/bin/start-services.sh
 sudo /usr/local/bin/start-services.sh
 ```
 
-### 🛠️ Bước 2: Tạo Systemd Service File
+###  Bước 2: Tạo Systemd Service File
 
-#### 📄 Template Service File
+####  Template Service File
 
 ```bash
 sudo nano /etc/systemd/system/start-services.service
@@ -281,7 +281,7 @@ SyslogIdentifier=start-services
 WantedBy=multi-user.target
 ```
 
-### 🛠️ Bước 3: Kích hoạt và quản lý Service
+###  Bước 3: Kích hoạt và quản lý Service
 
 #### 📝 Các lệnh quản lý service
 
@@ -312,7 +312,7 @@ sudo systemctl disable start-services.service
 
 ## Templates và Examples
 
-### 📄 Database Service Template
+###  Database Service Template
 
 ```bash
 # /usr/local/bin/database-service.sh
@@ -326,33 +326,33 @@ log_message() {
 }
 
 main() {
-    log_message "🚀 Starting database services"
+    log_message " Starting database services"
     
     # Start MongoDB
     if systemctl is-enabled mongod &>/dev/null; then
         systemctl start mongod
-        log_message "✅ MongoDB started"
+        log_message " MongoDB started"
     fi
     
     # Start PostgreSQL
     if systemctl is-enabled postgresql &>/dev/null; then
         systemctl start postgresql
-        log_message "✅ PostgreSQL started"
+        log_message " PostgreSQL started"
     fi
     
     # Start Redis
     if systemctl is-enabled redis &>/dev/null; then
         systemctl start redis
-        log_message "✅ Redis started"
+        log_message " Redis started"
     fi
     
-    log_message "✅ Database services startup completed"
+    log_message " Database services startup completed"
 }
 
 main "$@"
 ```
 
-### 📄 Monitoring Service Template
+###  Monitoring Service Template
 
 ```bash
 # /usr/local/bin/monitoring-service.sh
@@ -366,34 +366,34 @@ log_message() {
 }
 
 main() {
-    log_message "🚀 Starting monitoring services"
+    log_message " Starting monitoring services"
     
     # Start Prometheus
     if [ -d "/opt/prometheus" ]; then
         cd /opt/prometheus
         docker-compose up -d
-        log_message "✅ Prometheus stack started"
+        log_message " Prometheus stack started"
     fi
     
     # Start Node Exporter
     if systemctl is-enabled node_exporter &>/dev/null; then
         systemctl start node_exporter
-        log_message "✅ Node Exporter started"
+        log_message " Node Exporter started"
     fi
     
     # Start Grafana
     if systemctl is-enabled grafana-server &>/dev/null; then
         systemctl start grafana-server
-        log_message "✅ Grafana started"
+        log_message " Grafana started"
     fi
     
-    log_message "✅ Monitoring services startup completed"
+    log_message " Monitoring services startup completed"
 }
 
 main "$@"
 ```
 
-### 📄 Backup Service Template
+###  Backup Service Template
 
 ```bash
 # /usr/local/bin/backup-service.sh
@@ -408,7 +408,7 @@ log_message() {
 }
 
 main() {
-    log_message "🚀 Starting backup services"
+    log_message " Starting backup services"
     
     # Create backup directory
     mkdir -p ${BACKUP_DIR}
@@ -416,16 +416,16 @@ main() {
     # Mount backup drives
     if [ -f "/etc/fstab" ]; then
         mount -a
-        log_message "✅ Backup drives mounted"
+        log_message " Backup drives mounted"
     fi
     
     # Start backup scheduler
     if systemctl is-enabled backup-scheduler &>/dev/null; then
         systemctl start backup-scheduler
-        log_message "✅ Backup scheduler started"
+        log_message " Backup scheduler started"
     fi
     
-    log_message "✅ Backup services startup completed"
+    log_message " Backup services startup completed"
 }
 
 main "$@"
@@ -435,7 +435,7 @@ main "$@"
 
 ## Monitoring và Logging
 
-### 📊 System Monitoring
+###  System Monitoring
 
 #### Service Status Dashboard
 ```bash
@@ -452,7 +452,7 @@ services=("nginx" "postgresql" "redis" "docker" "mongod")
 
 for service in "${services[@]}"; do
     if systemctl is-active --quiet $service; then
-        echo "✅ $service: RUNNING"
+        echo " $service: RUNNING"
     else
         echo "❌ $service: STOPPED"
     fi
@@ -483,7 +483,7 @@ fi
 }
 ```
 
-### 📈 Alerting
+###  Alerting
 
 #### Discord Notification Function
 ```bash
@@ -501,7 +501,7 @@ send_discord_notification() {
 }
 
 # Usage in scripts
-send_discord_notification "🚀 Services started successfully on $(hostname)"
+send_discord_notification " Services started successfully on $(hostname)"
 ```
 
 ---
@@ -516,7 +516,7 @@ send_discord_notification "🚀 Services started successfully on $(hostname)"
 4. **Error Handling**: Implement proper error handling
 5. **Secrets Management**: Không hardcode credentials trong scripts
 
-### 📈 Performance Optimization
+###  Performance Optimization
 
 1. **Parallel Execution**: Start independent services in parallel
 2. **Resource Monitoring**: Monitor CPU, memory, disk usage
@@ -524,7 +524,7 @@ send_discord_notification "🚀 Services started successfully on $(hostname)"
 4. **Health Checks**: Implement proper health checks
 5. **Graceful Shutdowns**: Handle shutdowns gracefully
 
-### 🔄 Automation Best Practices
+###  Automation Best Practices
 
 1. **Idempotency**: Scripts should be idempotent
 2. **Logging**: Comprehensive logging cho debugging

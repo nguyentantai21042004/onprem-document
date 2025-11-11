@@ -45,11 +45,11 @@ ConfigMap + Secret (Cấu hình)
 - Quản lý thủ công phức tạp
 
 #### Lợi ích của Deployment
-- ✅ **Tự phục hồi**: Pod tự động được tạo lại khi lỗi
-- ✅ **Mở rộng dễ dàng**: Scale ngang đơn giản
-- ✅ **Rolling update**: Cập nhật không downtime
-- ✅ **Rollback**: Quay lại phiên bản trước nhanh chóng
-- ✅ **Quản lý khai báo**: Định nghĩa trạng thái mong muốn
+-  **Tự phục hồi**: Pod tự động được tạo lại khi lỗi
+-  **Mở rộng dễ dàng**: Scale ngang đơn giản
+-  **Rolling update**: Cập nhật không downtime
+-  **Rollback**: Quay lại phiên bản trước nhanh chóng
+-  **Quản lý khai báo**: Định nghĩa trạng thái mong muốn
 
 ### Kiến trúc Deployment
 

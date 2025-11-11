@@ -52,17 +52,17 @@ Số port ảo tối đa mà switch có thể hỗ trợ
 Mỗi VM sẽ dùng 1 port
 
 Security Settings:
-├── Promiscuous mode: Reject ✅
-├── MAC address changes: Accept ✅
-└── Forged transmits: Accept ✅
+├── Promiscuous mode: Reject 
+├── MAC address changes: Accept 
+└── Forged transmits: Accept 
 Giải thích từng option:
 
 Promiscuous mode: Reject - VM không thể "nghe lén" traffic của VMs khác (bảo mật)
 MAC address changes: Accept - VM có thể thay đổi MAC address (cần cho một số ứng dụng)
 Forged transmits: Accept - VM có thể gửi packets với MAC address khác (cần cho virtualization)
 
-⚠️ QUAN TRỌNG NHẤT:
-"Add a physical network adapter" → KHÔNG TICK ✅
+⚠ QUAN TRỌNG NHẤT:
+"Add a physical network adapter" → KHÔNG TICK 
 Giải thích:
 
 Physical network adapter là card mạng vật lý (vmnic0)
@@ -225,12 +225,12 @@ Giải pháp:
 2.5 Verification Steps (Bước xác nhận)
 Sau khi hoàn thành Phase 1:
 Checklist:
-✅ vSwitch-DB đã tạo thành công
-✅ vSwitch-DB KHÔNG có physical adapter
-✅ DB-Network port group đã tạo
-✅ Port group thuộc vSwitch-DB
-✅ Security settings đúng (Promiscuous: Reject)
-✅ Status: Connected (cả vSwitch và port group)
+ vSwitch-DB đã tạo thành công
+ vSwitch-DB KHÔNG có physical adapter
+ DB-Network port group đã tạo
+ Port group thuộc vSwitch-DB
+ Security settings đúng (Promiscuous: Reject)
+ Status: Connected (cả vSwitch và port group)
 Visual confirmation:
 Networking → Virtual switches:
 - Thấy 2 vSwitches: vSwitch0 và vSwitch-DB
@@ -240,48 +240,48 @@ Networking → Virtual switches:
 Chuẩn bị cho Phase 2:
 Những gì đã có:
 
-✅ Network infrastructure sẵn sàng
-✅ Isolated network cho database
-✅ Port group cho database VMs
+ Network infrastructure sẵn sàng
+ Isolated network cho database
+ Port group cho database VMs
 
 Những gì cần làm tiếp:
 
-🔄 Tạo pfSense VM với 2 network interfaces
-🔄 Kết nối pfSense làm gateway giữa 2 networks
-🔄 Cấu hình routing và firewall
+ Tạo pfSense VM với 2 network interfaces
+ Kết nối pfSense làm gateway giữa 2 networks
+ Cấu hình routing và firewall
 
 Kết quả Phase 1:
-🎯 Network foundation hoàn thành - Đã có isolated network cho database, sẵn sàng triển khai pfSense router trong Phase 2!
+ Network foundation hoàn thành - Đã có isolated network cho database, sẵn sàng triển khai pfSense router trong Phase 2!
 
 
 Tóm tắt Phase 3: Tạo pfSense VM & Network Configuration
 📋 Roadmap Phase 3 đã hoàn thành:
 3.1 Download & Upload pfSense ISO
-✅ Tải pfSense CE ISO từ pfsense.org
-✅ Upload lên ESXi datastore via vSphere Client
-✅ Path: /vmfs/volumes/datastore1/ISO-Images/pfSense-CE-x.x.x.iso
+ Tải pfSense CE ISO từ pfsense.org
+ Upload lên ESXi datastore via vSphere Client
+ Path: /vmfs/volumes/datastore1/ISO-Images/pfSense-CE-x.x.x.iso
 3.2 Tạo pfSense VM
-✅ VM Name: pfSense-Router
-✅ OS: FreeBSD 12 (64-bit)
-✅ Resources: 1 vCPU, 2GB RAM, 20GB disk
-✅ Network Adapter 1: VM Network (WAN - 192.168.1.0/24)
-✅ Network Adapter 2: DB-Network (LAN - 172.16.1.0/24)
-✅ CD/DVD: pfSense ISO
+ VM Name: pfSense-Router
+ OS: FreeBSD 12 (64-bit)
+ Resources: 1 vCPU, 2GB RAM, 20GB disk
+ Network Adapter 1: VM Network (WAN - 192.168.1.0/24)
+ Network Adapter 2: DB-Network (LAN - 172.16.1.0/24)
+ CD/DVD: pfSense ISO
 3.3 Cài đặt pfSense
-✅ Boot từ ISO → Install pfSense
-✅ Auto partitioning (UFS)
-✅ Installation hoàn tất
-✅ Remove ISO sau khi reboot
+ Boot từ ISO → Install pfSense
+ Auto partitioning (UFS)
+ Installation hoàn tất
+ Remove ISO sau khi reboot
 3.4 Interface Assignment
-✅ WAN Interface: vmx0 (VM Network)
-✅ LAN Interface: vmx1 (DB-Network)
-✅ No VLAN configuration
+ WAN Interface: vmx0 (VM Network)
+ LAN Interface: vmx1 (DB-Network)
+ No VLAN configuration
 3.5 IP Configuration
-✅ WAN IP: 192.168.1.190/24 (static)
-✅ WAN Gateway: 192.168.1.1 (router nhà)
-✅ LAN IP: 172.16.1.1/24 (static)
-✅ DHCP Pool: 172.16.1.10-50
-✅ Web Protocol: HTTP enabled
+ WAN IP: 192.168.1.190/24 (static)
+ WAN Gateway: 192.168.1.1 (router nhà)
+ LAN IP: 172.16.1.1/24 (static)
+ DHCP Pool: 172.16.1.10-50
+ Web Protocol: HTTP enabled
 
 🔥 Command quan trọng nhất: pfctl -d
 Lệnh này làm gì:
@@ -294,10 +294,10 @@ Tại sao hiệu quả:
 ❌ Symptom: Không thể truy cập http://192.168.1.190
 ❌ Root cause: Anti-lockout rule chưa configured properly
 2. pfctl -d Solution:
-✅ pfctl = Packet Filter Control (FreeBSD firewall)
-✅ -d flag = Disable firewall rules temporarily
-✅ Effect: Allow ALL traffic through (no filtering)
-✅ Result: Web interface immediately accessible
+ pfctl = Packet Filter Control (FreeBSD firewall)
+ -d flag = Disable firewall rules temporarily
+ Effect: Allow ALL traffic through (no filtering)
+ Result: Web interface immediately accessible
 Technical Details:
 pfSense Firewall Architecture:
 Internet → pfSense WAN → Firewall Rules → Services
@@ -308,9 +308,9 @@ Default Behavior:
 - Need proper rules hoặc disable firewall
 pfctl -d Impact:
 Before: WAN → [FIREWALL BLOCKS] → Web Interface ❌
-After:  WAN → [NO FIREWALL] → Web Interface ✅
+After:  WAN → [NO FIREWALL] → Web Interface 
 
-🛡️ Firewall States:
+🛡 Firewall States:
 Enabled (Default):
 bashpfctl -e    # Enable firewall
 - Security rules active
@@ -327,7 +327,7 @@ Check Status:
 bashpfctl -s info    # Show firewall status
 pfctl -s rules   # Show active rules
 
-🎯 Network Topology Final:
+ Network Topology Final:
 Internet
     │
 Router nhà (192.168.1.1)
@@ -356,9 +356,9 @@ ESXi Host (192.168.1.100)
 │     └── Database VMs: (future)  │
 └─────────────────────────────────┘
 
-✅ Access Methods:
+ Access Methods:
 Working Access:
-✅ WAN Web Interface: http://192.168.1.190
+ WAN Web Interface: http://192.168.1.190
    Login: admin/pfsense
    từ máy trong mạng 192.168.1.0/24
 
@@ -366,40 +366,40 @@ Working Access:
    Chỉ accessible từ VMs trong DB-Network
    Expected behavior (network isolation)
 SSH Access (Available):
-✅ SSH to pfSense: ssh admin@192.168.1.190
+ SSH to pfSense: ssh admin@192.168.1.190
    Console access for advanced config
    Alternative to web interface
 
-🔧 Troubleshooting Commands Used:
+ Troubleshooting Commands Used:
 Network Testing:
 bash# Từ pfSense console
-Option 7: ping 192.168.1.1    # Router test ✅
-Option 7: ping 8.8.8.8        # Internet test ✅  
-Option 7: ping 172.16.1.1     # Self test ✅
+Option 7: ping 192.168.1.1    # Router test 
+Option 7: ping 8.8.8.8        # Internet test   
+Option 7: ping 172.16.1.1     # Self test 
 Service Management:
 bashOption 11: Restart GUI        # Web service restart
 Option 14: Enable SSH         # Remote access
 Option 8: Shell → pfctl -d    # Disable firewall ⭐
 
-🎉 Phase 3 Achievements:
+ Phase 3 Achievements:
 Infrastructure:
-✅ pfSense VM operational
-✅ Dual network interfaces configured  
-✅ WAN connectivity to internet
-✅ LAN subnet for database isolation
-✅ DHCP server for automatic IP assignment
+ pfSense VM operational
+ Dual network interfaces configured  
+ WAN connectivity to internet
+ LAN subnet for database isolation
+ DHCP server for automatic IP assignment
 Security:
-✅ Network segmentation (192.168.1.x ≠ 172.16.1.x)
-✅ Firewall router between subnets
-✅ Controlled access points
-✅ Foundation for advanced security rules
+ Network segmentation (192.168.1.x ≠ 172.16.1.x)
+ Firewall router between subnets
+ Controlled access points
+ Foundation for advanced security rules
 Management:
-✅ Web interface accessible
-✅ SSH access available
-✅ Console management functional
-✅ Ready for production configuration
+ Web interface accessible
+ SSH access available
+ Console management functional
+ Ready for production configuration
 
-🚀 Ready for Phase 4:
+ Ready for Phase 4:
 Network foundation hoàn thiện, sẵn sàng cho:
 
 Advanced firewall rules configuration

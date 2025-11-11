@@ -46,7 +46,7 @@ Internal Server: 192.168.1.100:80
 
 ### Security Best Practices:
 
-#### ✅ DO:
+####  DO:
 - Use non-standard external ports (2222 thay vì 22)
 - Enable strong authentication
 - Use VPN khi có thể
@@ -196,7 +196,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         <p>Server IP: {self.server.server_address[0]}</p>
         <p>Requested path: {self.path}</p>
         <hr>
-        <p>🚀 Port Forwarding Working!</p>
+        <p> Port Forwarding Working!</p>
         </body></html>
         """
         self.wfile.write(html.encode())
@@ -498,7 +498,7 @@ for service in "${SERVICES[@]}"; do
     if ! systemctl is-active --quiet $service; then
         curl -H "Content-Type: application/json" \
              -X POST \
-             -d "{\"content\":\"⚠️ Service $service is down on $(hostname)\"}" \
+             -d "{\"content\":\"⚠ Service $service is down on $(hostname)\"}" \
              "$DISCORD_WEBHOOK"
     fi
 done

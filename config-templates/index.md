@@ -4,7 +4,7 @@
 
 This section contains ready-to-use configuration templates for all components of your on-premise server infrastructure. These templates are organized by service type and include examples from real deployments.
 
-## 🗂️ Directory Structure
+## 🗂 Directory Structure
 
 ```
 05-config-templates/
@@ -30,7 +30,7 @@ This section contains ready-to-use configuration templates for all components of
     └── monitoring/            # Monitoring configurations
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Using Templates
 
@@ -56,7 +56,7 @@ Common variables used across templates:
 - `<CLUSTER_IP>`: Kubernetes cluster IP range
 - `<NODE_IP>`: Node IP addresses
 
-## 📚 Template Categories
+##  Template Categories
 
 ### 1. Kubernetes Resources
 
@@ -132,7 +132,7 @@ Common variables used across templates:
 - **Alertmanager**: Alert routing
 - **Exporters**: Metric exporters
 
-## 🔧 Template Usage Examples
+##  Template Usage Examples
 
 ### Deploy Portfolio Application
 
@@ -214,7 +214,7 @@ curl -H "Host: your-domain.com" http://your-ingress-ip
 kubectl logs -f deployment/your-deployment -n your-namespace
 ```
 
-## 🔐 Security Best Practices
+##  Security Best Practices
 
 ### Secret Management
 
@@ -263,7 +263,7 @@ spec:
   - Egress
 ```
 
-## 📈 Monitoring and Alerting
+##  Monitoring and Alerting
 
 ### Prometheus Configuration
 
@@ -302,7 +302,7 @@ spec:
 }
 ```
 
-## 🏆 Best Practices
+##  Best Practices
 
 ### Template Organization
 
@@ -350,7 +350,7 @@ spec:
 - Deployment strategies align with application needs
 - Secret management integrates with Jenkins
 
-## 📞 Support and Troubleshooting
+##  Support and Troubleshooting
 
 ### Common Issues
 

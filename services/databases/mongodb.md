@@ -7,11 +7,11 @@
 ## Tổng Quan
 
 Guide này hướng dẫn setup **MongoDB Replica Set 3 nodes** với:
-- ✅ **High Availability** với automatic failover
-- ✅ **LVM Storage** layout tối ưu performance  
-- ✅ **Authentication & Security** đầy đủ
-- ✅ **Production-ready configuration**
-- ✅ **Comprehensive testing & monitoring**
+-  **High Availability** với automatic failover
+-  **LVM Storage** layout tối ưu performance  
+-  **Authentication & Security** đầy đủ
+-  **Production-ready configuration**
+-  **Comprehensive testing & monitoring**
 
 ### Kiến Trúc Cluster
 
@@ -506,7 +506,7 @@ sudo chmod 400 /tmp/mongodb-keyfile
 scp /tmp/mongodb-keyfile root@172.16.19.112:/tmp/
 scp /tmp/mongodb-keyfile root@172.16.19.113:/tmp/
 
-echo "✅ Keyfile distributed to all nodes"
+echo " Keyfile distributed to all nodes"
 ```
 
 **Trên cả 3 nodes (111, 112, 113):**
@@ -745,7 +745,7 @@ mongosh --host 172.16.19.111 --port 27017 \
   try {
     db.test.insertOne({test: 'should fail'});
   } catch(e) {
-    print('✅ Insert correctly blocked: ' + e.message);
+    print(' Insert correctly blocked: ' + e.message);
   }
   "
 
@@ -757,13 +757,13 @@ mongosh --host 172.16.19.111 --port 27017 \
   use myapp;
   db.dev_test.insertOne({message: 'Dev can write', timestamp: new Date()});
   db.dev_test.createIndex({message: 1});
-  print('✅ Developer can read/write in myapp');
+  print(' Developer can read/write in myapp');
   
   // This should FAIL:
   try {
     rs.status();
   } catch(e) {
-    print('✅ Cluster operations correctly blocked: ' + e.message);
+    print(' Cluster operations correctly blocked: ' + e.message);
   }
   "
 ```
@@ -801,7 +801,7 @@ status.members.forEach(function(member) {
 });
 
 // Check database stats
-print('📊 DATABASE STATISTICS:');
+print(' DATABASE STATISTICS:');
 print('======================');
 var dbStats = db.stats();
 print('Collections: ' + dbStats.collections);
@@ -810,7 +810,7 @@ print('Index Size: ' + Math.round(dbStats.indexSize/1024/1024*100)/100 + ' MB');
 print('');
 
 // Check server status
-print('🖥️  SERVER STATUS:');
+print('🖥  SERVER STATUS:');
 print('=================');
 var serverStatus = db.serverStatus();
 print('Version: ' + serverStatus.version);
@@ -844,7 +844,7 @@ mongosh --host 172.16.19.111 --port 27017 \
     test_id: testId,
     primary_write: true
   });
-  print('✅ Data written to PRIMARY with test_id: ' + testId);
+  print(' Data written to PRIMARY with test_id: ' + testId);
   "
 
 # Verify replication on SECONDARIES
@@ -857,7 +857,7 @@ for ip in 172.16.19.112 172.16.19.113; do
     rs.secondaryOk();
     use testdb;
     var count = db.replication_test.countDocuments();
-    print('✅ Secondary $ip has ' + count + ' documents');
+    print(' Secondary $ip has ' + count + ' documents');
     " --quiet
 done
 ```
@@ -892,7 +892,7 @@ mongosh --host 172.16.19.112 --port 27017 \
   var status = rs.status();
   status.members.forEach(function(member) {
     if (member.stateStr === 'PRIMARY') {
-      print('✅ NEW PRIMARY: ' + member.name);
+      print(' NEW PRIMARY: ' + member.name);
     }
   });
   " --quiet
@@ -907,7 +907,7 @@ mongosh --host 172.16.19.111 --port 27017 \
   --authenticationDatabase admin \
   --eval "
 use testdb;
-print('🚀 PERFORMANCE TESTING:');
+print(' PERFORMANCE TESTING:');
 print('=======================');
 
 var startTime = new Date();
@@ -925,12 +925,12 @@ for (var i = 0; i < 1000; i++) {
 var endTime = new Date();
 var duration = endTime - startTime;
 
-print('✅ Inserted 1000 documents in ' + duration + 'ms');
+print(' Inserted 1000 documents in ' + duration + 'ms');
 print('Average: ' + Math.round(duration/1000*100)/100 + 'ms per document');
 
 // Test index creation và query performance
 db.load_test.createIndex({counter: 1});
-print('✅ Index created on counter field');
+print(' Index created on counter field');
 
 var queryStart = new Date();
 var result = db.load_test.find({counter: 500}).explain('executionStats');
@@ -1049,7 +1049,7 @@ echo "=== MongoDB Health Check - $(date) ==="
 for ip in 172.16.19.111 172.16.19.112 172.16.19.113; do
     echo "Checking $ip..."
     if mongosh --host $ip --port 27017 -u monitor -p MonitorPassword123! --authenticationDatabase admin --eval "db.runCommand('ping')" --quiet >/dev/null 2>&1; then
-        echo "✅ $ip: MongoDB responding"
+        echo " $ip: MongoDB responding"
     else
         echo "❌ $ip: MongoDB not responding"
     fi
@@ -1102,7 +1102,7 @@ sudo tar -czf $BACKUP_DIR/lvm-backup-$DATE.tar.gz -C /mnt/mongodb-snapshot .
 sudo umount /mnt/mongodb-snapshot
 sudo lvremove -y /dev/ubuntu-vg/mongodb-data-snap-$DATE
 
-echo "✅ Backup completed: $BACKUP_DIR/lvm-backup-$DATE.tar.gz"
+echo " Backup completed: $BACKUP_DIR/lvm-backup-$DATE.tar.gz"
 ```
 
 #### Logical Backup với mongodump
@@ -1135,7 +1135,7 @@ rm -rf $BACKUP_DIR/dump-$DATE
 # Keep only last 7 backups
 find $BACKUP_DIR -name "mongodump-*.tar.gz" -mtime +7 -delete
 
-echo "✅ Backup completed: $BACKUP_DIR/mongodump-$DATE.tar.gz"
+echo " Backup completed: $BACKUP_DIR/mongodump-$DATE.tar.gz"
 ```
 
 ### Performance Monitoring
@@ -1346,7 +1346,7 @@ mongosh --host 172.16.19.111 --port 27017 \
   --eval "
   use admin;
   db.changeUserPassword('backup', 'NewBackupPassword123!');
-  print('✅ Backup user password updated');
+  print(' Backup user password updated');
   "
 ```
 
@@ -1356,9 +1356,9 @@ mongosh --host 172.16.19.111 --port 27017 \
 
 ### Final Cluster Status
 
-**🎉 CONGRATULATIONS! Your MongoDB Replica Set is PRODUCTION READY! 🎉**
+** CONGRATULATIONS! Your MongoDB Replica Set is PRODUCTION READY! **
 
-#### ✅ **What You Have:**
+####  **What You Have:**
 - **High Availability**: 3-node replica set with automatic failover
 - **Performance**: LVM storage layout optimized for database workloads
 - **Security**: Authentication, authorization, và inter-replica encryption
@@ -1383,14 +1383,14 @@ mongodb://appuser:AppPassword123!@172.16.19.111:27017,172.16.19.112:27017,172.16
 - **Backup**: `/backup/mongodb/`
 - **Keyfile**: `/etc/mongodb-keyfile`
 
-#### 🎯 **Next Steps:**
+####  **Next Steps:**
 1. **Setup monitoring** với Prometheus/Grafana
 2. **Implement automated backups** với cron jobs
 3. **Test disaster recovery** procedures
 4. **Configure alerting** cho critical events
 5. **Document runbooks** cho operations team
 
-**Your MongoDB cluster is ready to handle production workloads!** 🚀
+**Your MongoDB cluster is ready to handle production workloads!** 
 
 ---
 
