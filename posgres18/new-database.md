@@ -23,13 +23,13 @@
 
 Hướng dẫn này sẽ giúp bạn tạo một database PostgreSQL production-ready với 4 user levels khác nhau, mỗi user có quyền phù hợp với vai trò của họ.
 
-**Database:** `kanban`
+**Database:** `smap`
 
 **4 Users:**
-- `kanban_owner` - Quản lý database, chạy migrations
-- `kanban_api` - Dùng cho production API (quyền hạn chế)
-- `kanban_dev` - Dùng cho developers (nhiều quyền hơn)
-- `kanban_readonly` - Chỉ đọc dữ liệu (reporting, analytics)
+- `smap_owner` - Quản lý database, chạy migrations
+- `smap_api` - Dùng cho production API (quyền hạn chế)
+- `smap_dev` - Dùng cho developers (nhiều quyền hơn)
+- `smap_readonly` - Chỉ đọc dữ liệu (reporting, analytics)
 
 ---
 
@@ -44,7 +44,7 @@ Hướng dẫn này sẽ giúp bạn tạo một database PostgreSQL production-
         ┌──────────────┴──────────────┐
         │                             │
 ┌───────▼────────┐            ┌──────▼───────┐
-│  kanban_owner   │            │ Other DBs    │
+│  smap_owner   │            │ Other DBs    │
 │  - Owner DB    │            │              │
 │  - Migrations  │            └──────────────┘
 │  - DDL changes │
@@ -112,7 +112,7 @@ sudo -u postgres psql
 
 ```sql
 -- Tạo database với encoding UTF8
-CREATE DATABASE kanban 
+CREATE DATABASE smap 
     WITH 
     ENCODING = 'UTF8'
     LC_COLLATE = 'en_US.UTF-8'
@@ -121,50 +121,50 @@ CREATE DATABASE kanban
     CONNECTION LIMIT = -1;
 
 -- Thêm comment cho database (tùy chọn)
-COMMENT ON DATABASE kanban IS 'Production database for kanban application';
+COMMENT ON DATABASE smap IS 'Production database for smap application';
 ```
 
 ### 1.3. Kiểm tra database đã tạo
 
 ```sql
 -- Liệt kê databases
-\l kanban
+\l smap
 
 -- Hoặc query
 SELECT datname, pg_encoding_to_char(encoding), datcollate, datctype 
 FROM pg_database 
-WHERE datname = 'kanban';
+WHERE datname = 'smap';
 ```
 
 **Kết quả mong đợi:**
 ```
   datname  | pg_encoding_to_char |   datcollate    |    datctype     
 -----------+---------------------+-----------------+-----------------
- kanban     | UTF8                | en_US.UTF-8     | en_US.UTF-8
+ smap     | UTF8                | en_US.UTF-8     | en_US.UTF-8
 ```
 
 ### 1.4. Kết nối vào database mới
 
 ```sql
-\c kanban
+\c smap
 ```
 
-**Checkpoint 1:** Database `kanban` đã được tạo thành công
+**Checkpoint 1:** Database `smap` đã được tạo thành công
 
 ---
 
 ## BƯỚC 2: TẠO USER OWNER
 
-### 2.1. Tạo role kanban_owner
+### 2.1. Tạo role smap_owner
 
 ```sql
 -- Đảm bảo đang ở postgres database
 \c postgres
 
 -- Tạo user owner
-CREATE ROLE kanban_owner WITH 
+CREATE ROLE smap_owner WITH 
     LOGIN                           -- Cho phép đăng nhập
-    PASSWORD 'kanban_owner@21042004' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_owner@21042004' -- ⚠️ ĐỔI PASSWORD NÀY!
     NOSUPERUSER                     -- Không phải superuser
     CREATEDB                        -- Có thể tạo/xóa database
     NOCREATEROLE                    -- Không tạo role khác
@@ -173,42 +173,42 @@ CREATE ROLE kanban_owner WITH
     CONNECTION LIMIT 10;            -- Tối đa 10 connections
 
 -- Thêm comment
-COMMENT ON ROLE kanban_owner IS 'Database owner - Use for migrations and schema changes only';
+COMMENT ON ROLE smap_owner IS 'Database owner - Use for migrations and schema changes only';
 ```
 
 ### 2.2. Đặt owner cho database
 
 ```sql
--- Chuyển ownership database sang kanban_owner
-ALTER DATABASE kanban OWNER TO kanban_owner;
+-- Chuyển ownership database sang smap_owner
+ALTER DATABASE smap OWNER TO smap_owner;
 
 -- Kiểm tra
-\l kanban
+\l smap
 ```
 
 ### 2.3. Cấp quyền đầy đủ trong database
 
 ```sql
--- Kết nối vào database kanban
-\c kanban
+-- Kết nối vào database smap
+\c smap
 
 -- Cấp ALL quyền trên schema public
-GRANT ALL PRIVILEGES ON SCHEMA public TO kanban_owner;
+GRANT ALL PRIVILEGES ON SCHEMA public TO smap_owner;
 
 -- Cấp quyền trên tất cả objects hiện có
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO kanban_owner;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO kanban_owner;
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO kanban_owner;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO smap_owner;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO smap_owner;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO smap_owner;
 
 -- Cấp quyền tự động cho objects mới tạo sau này
 ALTER DEFAULT PRIVILEGES IN SCHEMA public 
-    GRANT ALL PRIVILEGES ON TABLES TO kanban_owner;
+    GRANT ALL PRIVILEGES ON TABLES TO smap_owner;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA public 
-    GRANT ALL PRIVILEGES ON SEQUENCES TO kanban_owner;
+    GRANT ALL PRIVILEGES ON SEQUENCES TO smap_owner;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA public 
-    GRANT ALL PRIVILEGES ON FUNCTIONS TO kanban_owner;
+    GRANT ALL PRIVILEGES ON FUNCTIONS TO smap_owner;
 ```
 
 ### 2.4. Thu hồi quyền trên database khác
@@ -216,15 +216,15 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 ```sql
 \c postgres
 
-REVOKE ALL ON DATABASE postgres FROM kanban_owner;
-REVOKE CONNECT ON DATABASE template0 FROM kanban_owner;
-REVOKE CONNECT ON DATABASE template1 FROM kanban_owner;
+REVOKE ALL ON DATABASE postgres FROM smap_owner;
+REVOKE CONNECT ON DATABASE template0 FROM smap_owner;
+REVOKE CONNECT ON DATABASE template1 FROM smap_owner;
 
 \c postgres
-REVOKE ALL ON SCHEMA public FROM kanban_owner;
+REVOKE ALL ON SCHEMA public FROM smap_owner;
 
 \c template1
-REVOKE ALL ON SCHEMA public FROM kanban_owner;
+REVOKE ALL ON SCHEMA public FROM smap_owner;
 
 \c postgres
 ```
@@ -233,31 +233,31 @@ REVOKE ALL ON SCHEMA public FROM kanban_owner;
 
 ```sql
 -- Xem thông tin role
-\du kanban_owner
+\du smap_owner
 
 -- Kết quả mong đợi:
 --   Role name    |  Attributes  | Member of 
 -- ---------------+--------------+-----------
---  kanban_owner   | Create DB   +| {}
+--  smap_owner   | Create DB   +| {}
 --                | 10 connections|
 ```
 
-**Checkpoint 2:** User `kanban_owner` đã được tạo với đầy đủ quyền trên database `kanban`
+**Checkpoint 2:** User `smap_owner` đã được tạo với đầy đủ quyền trên database `smap`
 
 ---
 
 ## BƯỚC 3: TẠO USER API
 
-### 3.1. Tạo role kanban_api
+### 3.1. Tạo role smap_api
 
 ```sql
 -- Kết nối postgres database
 \c postgres
 
 -- Tạo user cho production API
-CREATE ROLE kanban_api WITH 
+CREATE ROLE smap_api WITH 
     LOGIN 
-    PASSWORD 'kanban_api@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_api@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
     NOSUPERUSER 
     NOCREATEDB                    -- KHÔNG được tạo database
     NOCREATEROLE 
@@ -265,29 +265,29 @@ CREATE ROLE kanban_api WITH
     NOREPLICATION 
     CONNECTION LIMIT 100;         -- API cần nhiều connections
 
-COMMENT ON ROLE kanban_api IS 'Production API user - Limited to CRUD operations only';
+COMMENT ON ROLE smap_api IS 'Production API user - Limited to CRUD operations only';
 ```
 
 ### 3.2. Cấp quyền CONNECT vào database
 
 ```sql
--- Cho phép kết nối vào kanban
-GRANT CONNECT ON DATABASE kanban TO kanban_api;
+-- Cho phép kết nối vào smap
+GRANT CONNECT ON DATABASE smap TO smap_api;
 
 -- Thu hồi quyền vào database khác
-REVOKE ALL ON DATABASE postgres FROM kanban_api;
-REVOKE CONNECT ON DATABASE template0 FROM kanban_api;
-REVOKE CONNECT ON DATABASE template1 FROM kanban_api;
+REVOKE ALL ON DATABASE postgres FROM smap_api;
+REVOKE CONNECT ON DATABASE template0 FROM smap_api;
+REVOKE CONNECT ON DATABASE template1 FROM smap_api;
 ```
 
 ### 3.3. Cấp quyền USAGE trên schema
 
 ```sql
--- Kết nối vào kanban
-\c kanban
+-- Kết nối vào smap
+\c smap
 
 -- Cấp quyền USAGE (cần thiết để truy cập objects)
-GRANT USAGE ON SCHEMA public TO kanban_api;
+GRANT USAGE ON SCHEMA public TO smap_api;
 ```
 
 ### 3.4. Cấp quyền CRUD only (KHÔNG có DDL)
@@ -295,34 +295,34 @@ GRANT USAGE ON SCHEMA public TO kanban_api;
 ```sql
 -- CHỈ cho phép SELECT, INSERT, UPDATE, DELETE
 -- KHÔNG cho phép CREATE, DROP, ALTER, TRUNCATE
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO kanban_api;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO smap_api;
 
 -- Cấp quyền trên sequences (cần cho auto-increment)
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO kanban_api;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO smap_api;
 
 -- Cấp quyền EXECUTE trên functions (nếu có stored procedures)
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO kanban_api;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO smap_api;
 ```
 
 ### 3.5. Cấu hình quyền cho objects mới
 
 ```sql
--- Khi kanban_owner tạo table mới, tự động grant cho kanban_api
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO kanban_api;
+-- Khi smap_owner tạo table mới, tự động grant cho smap_api
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO smap_api;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT USAGE, SELECT ON SEQUENCES TO kanban_api;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT USAGE, SELECT ON SEQUENCES TO smap_api;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT EXECUTE ON FUNCTIONS TO kanban_api;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT EXECUTE ON FUNCTIONS TO smap_api;
 ```
 
-### 3.6. Kiểm tra quyền của kanban_api
+### 3.6. Kiểm tra quyền của smap_api
 
 ```sql
 -- Kiểm tra role attributes
-\du kanban_api
+\du smap_api
 
 -- Kiểm tra quyền trên schema
 \dn+ public
@@ -331,22 +331,22 @@ ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public
 \ddp
 ```
 
-**Checkpoint 3:** User `kanban_api` có quyền CRUD nhưng không thể thay đổi schema
+**Checkpoint 3:** User `smap_api` có quyền CRUD nhưng không thể thay đổi schema
 
 ---
 
 ## BƯỚC 4: TẠO USER DEV
 
-### 4.1. Tạo role kanban_dev
+### 4.1. Tạo role smap_dev
 
 ```sql
 -- Kết nối postgres database
 \c postgres
 
 -- Tạo user cho developers
-CREATE ROLE kanban_dev WITH 
+CREATE ROLE smap_dev WITH 
     LOGIN 
-    PASSWORD 'kanban_dev@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_dev@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
     NOSUPERUSER 
     NOCREATEDB                     -- KHÔNG được tạo database
     NOCREATEROLE 
@@ -354,70 +354,70 @@ CREATE ROLE kanban_dev WITH
     NOREPLICATION 
     CONNECTION LIMIT 30;           -- Dev cần ít connection hơn API
 
-COMMENT ON ROLE kanban_dev IS 'Developer user - Full access for testing and development';
+COMMENT ON ROLE smap_dev IS 'Developer user - Full access for testing and development';
 ```
 
 ### 4.2. Cấp quyền CONNECT
 
 ```sql
--- Cho phép kết nối vào kanban
-GRANT CONNECT ON DATABASE kanban TO kanban_dev;
+-- Cho phép kết nối vào smap
+GRANT CONNECT ON DATABASE smap TO smap_dev;
 
 -- Thu hồi quyền vào database khác
-REVOKE ALL ON DATABASE postgres FROM kanban_dev;
-REVOKE CONNECT ON DATABASE template0 FROM kanban_dev;
-REVOKE CONNECT ON DATABASE template1 FROM kanban_dev;
+REVOKE ALL ON DATABASE postgres FROM smap_dev;
+REVOKE CONNECT ON DATABASE template0 FROM smap_dev;
+REVOKE CONNECT ON DATABASE template1 FROM smap_dev;
 ```
 
 ### 4.3. Cấp quyền đầy đủ (bao gồm DDL)
 
 ```sql
--- Kết nối vào kanban
-\c kanban
+-- Kết nối vào smap
+\c smap
 
 -- Cấp ALL quyền trên schema
-GRANT ALL PRIVILEGES ON SCHEMA public TO kanban_dev;
+GRANT ALL PRIVILEGES ON SCHEMA public TO smap_dev;
 
 -- Cấp ALL quyền trên tất cả objects
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO kanban_dev;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO kanban_dev;
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO kanban_dev;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO smap_dev;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO smap_dev;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO smap_dev;
 
 -- Tự động cho objects mới
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT ALL PRIVILEGES ON TABLES TO kanban_dev;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT ALL PRIVILEGES ON TABLES TO smap_dev;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT ALL PRIVILEGES ON SEQUENCES TO kanban_dev;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT ALL PRIVILEGES ON SEQUENCES TO smap_dev;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT ALL PRIVILEGES ON FUNCTIONS TO kanban_dev;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT ALL PRIVILEGES ON FUNCTIONS TO smap_dev;
 ```
 
-### 4.4. Kiểm tra quyền của kanban_dev
+### 4.4. Kiểm tra quyền của smap_dev
 
 ```sql
-\du kanban_dev
+\du smap_dev
 
 -- Dev có thể CREATE/DROP table nhưng KHÔNG thể xóa database
 ```
 
-**✅ Checkpoint 4:** User `kanban_dev` có đầy đủ quyền để test và phát triển
+**✅ Checkpoint 4:** User `smap_dev` có đầy đủ quyền để test và phát triển
 
 ---
 
 ## BƯỚC 5: TẠO USER READONLY
 
-### 5.1. Tạo role kanban_readonly
+### 5.1. Tạo role smap_readonly
 
 ```sql
 -- Kết nối postgres database
 \c postgres
 
 -- Tạo user readonly
-CREATE ROLE kanban_readonly WITH 
+CREATE ROLE smap_readonly WITH 
     LOGIN 
-    PASSWORD 'kanban_readonly@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
+    PASSWORD 'smap_readonly@2025' -- ⚠️ ĐỔI PASSWORD NÀY!
     NOSUPERUSER 
     NOCREATEDB 
     NOCREATEROLE 
@@ -425,53 +425,53 @@ CREATE ROLE kanban_readonly WITH
     NOREPLICATION 
     CONNECTION LIMIT 50;              -- Cho reporting tools
 
-COMMENT ON ROLE kanban_readonly IS 'Read-only user for reporting and analytics';
+COMMENT ON ROLE smap_readonly IS 'Read-only user for reporting and analytics';
 ```
 
 ### 5.2. Cấp quyền CONNECT
 
 ```sql
--- Cho phép kết nối vào kanban
-GRANT CONNECT ON DATABASE kanban TO kanban_readonly;
+-- Cho phép kết nối vào smap
+GRANT CONNECT ON DATABASE smap TO smap_readonly;
 
 -- Thu hồi quyền vào database khác
-REVOKE ALL ON DATABASE postgres FROM kanban_readonly;
-REVOKE CONNECT ON DATABASE template0 FROM kanban_readonly;
-REVOKE CONNECT ON DATABASE template1 FROM kanban_readonly;
+REVOKE ALL ON DATABASE postgres FROM smap_readonly;
+REVOKE CONNECT ON DATABASE template0 FROM smap_readonly;
+REVOKE CONNECT ON DATABASE template1 FROM smap_readonly;
 ```
 
 ### 5.3. Cấp quyền SELECT only
 
 ```sql
--- Kết nối vào kanban
-\c kanban
+-- Kết nối vào smap
+\c smap
 
 -- Cấp USAGE trên schema
-GRANT USAGE ON SCHEMA public TO kanban_readonly;
+GRANT USAGE ON SCHEMA public TO smap_readonly;
 
 -- CHỈ cho phép SELECT
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO kanban_readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO smap_readonly;
 
 -- Cho phép xem sequences (nhưng không update)
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO kanban_readonly;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO smap_readonly;
 
 -- Tự động cho tables mới
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT SELECT ON TABLES TO kanban_readonly;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT SELECT ON TABLES TO smap_readonly;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE kanban_owner IN SCHEMA public 
-    GRANT SELECT ON SEQUENCES TO kanban_readonly;
+ALTER DEFAULT PRIVILEGES FOR ROLE smap_owner IN SCHEMA public 
+    GRANT SELECT ON SEQUENCES TO smap_readonly;
 ```
 
-### 5.4. Kiểm tra quyền của kanban_readonly
+### 5.4. Kiểm tra quyền của smap_readonly
 
 ```sql
-\du kanban_readonly
+\du smap_readonly
 
 -- User này chỉ có thể SELECT, không INSERT/UPDATE/DELETE
 ```
 
-**Checkpoint 5:** User `kanban_readonly` chỉ có quyền đọc dữ liệu
+**Checkpoint 5:** User `smap_readonly` chỉ có quyền đọc dữ liệu
 
 ---
 
@@ -507,73 +507,73 @@ sudo nano /etc/postgresql/18/main/pg_hba.conf
 
 ```
 # ==============================================================================
-# DATABASE: kanban - 4 USER LEVELS SECURITY CONFIGURATION
+# DATABASE: smap - 4 USER LEVELS SECURITY CONFIGURATION
 # ==============================================================================
 # Rule priority: First match wins! Order matters!
 # ==============================================================================
 
 # -------------------------------
-# 1. USER: kanban_owner (Owner)
+# 1. USER: smap_owner (Owner)
 # -------------------------------
 # Chỉ cho phép kết nối từ localhost và các subnet nội bộ được phép (192.168.1.0/24, 172.16.21.0/24)
 
-local   kanban           kanban_owner                             md5
-host    kanban           kanban_owner     127.0.0.1/32            md5
-host    kanban           kanban_owner     ::1/128                 md5
-host    kanban           kanban_owner     192.168.1.0/24          md5
-host    kanban           kanban_owner     172.16.21.0/24          md5
+local   smap           smap_owner                             md5
+host    smap           smap_owner     127.0.0.1/32            md5
+host    smap           smap_owner     ::1/128                 md5
+host    smap           smap_owner     192.168.1.0/24          md5
+host    smap           smap_owner     172.16.21.0/24          md5
 # Từ chối owner kết nối từ mạng ngoài
-host    kanban           kanban_owner     0.0.0.0/0               reject
+host    smap           smap_owner     0.0.0.0/0               reject
 
 # -------------------------------
-# 2. USER: kanban_api (Production API)
+# 2. USER: smap_api (Production API)
 # -------------------------------
-# Cho phép kết nối vào database kanban từ localhost, 192.168.1.0/24 và 172.16.21.0/24 (có thể bổ sung subnet khác nếu cần)
+# Cho phép kết nối vào database smap từ localhost, 192.168.1.0/24 và 172.16.21.0/24 (có thể bổ sung subnet khác nếu cần)
 
-local   kanban           kanban_api                               md5
-host    kanban           kanban_api       127.0.0.1/32            md5
-host    kanban           kanban_api       ::1/128                 md5
-host    kanban           kanban_api       192.168.1.0/24          md5
-host    kanban           kanban_api       172.16.21.0/24          md5
-host    kanban           kanban_api       0.0.0.0/0               md5
-
-# -------------------------------
-# 3. USER: kanban_dev (Developers)
-# -------------------------------
-# Cho phép kết nối vào database kanban từ localhost, 192.168.1.0/24 và 172.16.21.0/24
-
-local   kanban           kanban_dev                               md5
-host    kanban           kanban_dev       127.0.0.1/32            md5
-host    kanban           kanban_dev       ::1/128                 md5
-host    kanban           kanban_dev       192.168.1.0/24          md5
-host    kanban           kanban_dev       172.16.21.0/24          md5
-host    kanban           kanban_dev       0.0.0.0/0               md5
+local   smap           smap_api                               md5
+host    smap           smap_api       127.0.0.1/32            md5
+host    smap           smap_api       ::1/128                 md5
+host    smap           smap_api       192.168.1.0/24          md5
+host    smap           smap_api       172.16.21.0/24          md5
+host    smap           smap_api       0.0.0.0/0               md5
 
 # -------------------------------
-# 4. USER: kanban_readonly (Analytics)
+# 3. USER: smap_dev (Developers)
 # -------------------------------
-# Cho phép kết nối vào database kanban từ localhost, 192.168.1.0/24 và 172.16.21.0/24
+# Cho phép kết nối vào database smap từ localhost, 192.168.1.0/24 và 172.16.21.0/24
 
-local   kanban           kanban_readonly                          md5
-host    kanban           kanban_readonly  127.0.0.1/32            md5
-host    kanban           kanban_readonly  ::1/128                 md5
-host    kanban           kanban_readonly  192.168.1.0/24          md5
-host    kanban           kanban_readonly  172.16.21.0/24          md5
-host    kanban           kanban_readonly  0.0.0.0/0               md5
+local   smap           smap_dev                               md5
+host    smap           smap_dev       127.0.0.1/32            md5
+host    smap           smap_dev       ::1/128                 md5
+host    smap           smap_dev       192.168.1.0/24          md5
+host    smap           smap_dev       172.16.21.0/24          md5
+host    smap           smap_dev       0.0.0.0/0               md5
+
+# -------------------------------
+# 4. USER: smap_readonly (Analytics)
+# -------------------------------
+# Cho phép kết nối vào database smap từ localhost, 192.168.1.0/24 và 172.16.21.0/24
+
+local   smap           smap_readonly                          md5
+host    smap           smap_readonly  127.0.0.1/32            md5
+host    smap           smap_readonly  ::1/128                 md5
+host    smap           smap_readonly  192.168.1.0/24          md5
+host    smap           smap_readonly  172.16.21.0/24          md5
+host    smap           smap_readonly  0.0.0.0/0               md5
 
 # ==============================================================================
-# SECURITY: TỪ CHỐI tất cả kanban users kết nối vào database KHÁC
+# SECURITY: TỪ CHỐI tất cả smap users kết nối vào database KHÁC
 # ==============================================================================
 
-local   all             kanban_owner                             reject
-local   all             kanban_api                               reject
-local   all             kanban_dev                               reject
-local   all             kanban_readonly                          reject
+local   all             smap_owner                             reject
+local   all             smap_api                               reject
+local   all             smap_dev                               reject
+local   all             smap_readonly                          reject
 
-host    all             kanban_owner     0.0.0.0/0               reject
-host    all             kanban_api       0.0.0.0/0               reject
-host    all             kanban_dev       0.0.0.0/0               reject
-host    all             kanban_readonly  0.0.0.0/0               reject
+host    all             smap_owner     0.0.0.0/0               reject
+host    all             smap_api       0.0.0.0/0               reject
+host    all             smap_dev       0.0.0.0/0               reject
+host    all             smap_readonly  0.0.0.0/0               reject
 
 # ==============================================================================
 # SUPERUSER: postgres (Giữ nguyên)
@@ -592,7 +592,7 @@ host    all             all             127.0.0.1/32            scram-sha-256
 host    all             all             ::1/128                 scram-sha-256
 
 # ==============================================================================
-# END OF kanban CONFIGURATION
+# END OF smap CONFIGURATION
 # ==============================================================================
 ```
 
@@ -634,12 +634,12 @@ sudo tail -50 /var/log/postgresql/postgresql-18-main.log
 
 ## BƯỚC 7: TESTING
 
-### 7.1. Test User: kanban_owner
+### 7.1. Test User: smap_owner
 
-#### A. Test kết nối vào kanban (phải OK)
+#### A. Test kết nối vào smap (phải OK)
 
 ```bash
-psql -U kanban_owner -h localhost -d kanban
+psql -U smap_owner -h localhost -d smap
 ```
 
 Nhập password: `Owner_SecureP@ss123!`
@@ -648,10 +648,10 @@ Nhập password: `Owner_SecureP@ss123!`
 -- Kiểm tra database và user hiện tại
 SELECT current_database(), current_user, session_user;
 
--- Liệt kê databases (chỉ thấy kanban)
+-- Liệt kê databases (chỉ thấy smap)
 \l
 
--- Kết quả mong đợi: CHỈ thấy database 'kanban' ✅
+-- Kết quả mong đợi: CHỈ thấy database 'smap' ✅
 
 -- Test quyền tạo table
 CREATE TABLE owner_test (
@@ -681,26 +681,26 @@ DROP TABLE owner_test;
 #### B. Test kết nối vào postgres (phải BỊ TỪ CHỐI)
 
 ```bash
-psql -U kanban_owner -h localhost -d postgres
+psql -U smap_owner -h localhost -d postgres
 ```
 
 **Kết quả mong đợi:**
 ```
 psql: error: connection to server at "localhost" (127.0.0.1), port 5432 failed: 
-FATAL: pg_hba.conf rejects connection for host "127.0.0.1", user "kanban_owner", database "postgres"
+FATAL: pg_hba.conf rejects connection for host "127.0.0.1", user "smap_owner", database "postgres"
 ```
 
 ✅ **ĐÚNG!** Owner bị chặn không vào được database khác
 
 ---
 
-### 7.2. Test User: kanban_api
+### 7.2. Test User: smap_api
 
 ```bash
-psql -U kanban_api -h localhost -d kanban
+psql -U smap_api -h localhost -d smap
 ```
 
-Nhập password: `kanban_api@2025`
+Nhập password: `smap_api@2025`
 
 ```sql
 -- Test SELECT (phải OK)
@@ -747,13 +747,13 @@ ALTER TABLE api_test ADD COLUMN description TEXT;
 
 ---
 
-### 7.3. Test User: kanban_dev
+### 7.3. Test User: smap_dev
 
 ```bash
-psql -U kanban_dev -h localhost -d kanban
+psql -U smap_dev -h localhost -d smap
 ```
 
-Nhập password: `kanban_dev@2025`
+Nhập password: `smap_dev@2025`
 
 ```sql
 -- Test SELECT (phải OK)
@@ -786,10 +786,10 @@ DROP TABLE dev_test;
 
 -- ❌ Test DROP DATABASE (phải LỖI - không có CREATEDB)
 \c postgres
-DROP DATABASE kanban;
+DROP DATABASE smap;
 -- Kết quả mong đợi: ERROR: permission denied to drop database
 
-\c kanban
+\c smap
 \q
 ```
 
@@ -799,13 +799,13 @@ DROP DATABASE kanban;
 
 ---
 
-### 7.4. Test User: kanban_readonly
+### 7.4. Test User: smap_readonly
 
 ```bash
-psql -U kanban_readonly -h localhost -d kanban
+psql -U smap_readonly -h localhost -d smap
 ```
 
-Nhập password: `kanban_readonly@2025`
+Nhập password: `smap_readonly@2025`
 
 ```sql
 -- Test SELECT (phải OK)
@@ -851,41 +851,41 @@ TRUNCATE users;
 
 2. Tạo 4 server connections:
 
-#### Connection 1: kanban_owner
-- Name: `kanban - Owner`
+#### Connection 1: smap_owner
+- Name: `smap - Owner`
 - Host: `localhost`
 - Port: `5432`
-- Maintenance database: `kanban`
-- Username: `kanban_owner`
+- Maintenance database: `smap`
+- Username: `smap_owner`
 - Password: `Owner_SecureP@ss123!`
 
-#### Connection 2: kanban_api
-- Name: `kanban - API`
+#### Connection 2: smap_api
+- Name: `smap - API`
 - Host: `localhost`
 - Port: `5432`
-- Maintenance database: `kanban`
-- Username: `kanban_api`
-- Password: `kanban_api@2025`
+- Maintenance database: `smap`
+- Username: `smap_api`
+- Password: `smap_api@2025`
 
-#### Connection 3: kanban_dev
-- Name: `kanban - Dev`
+#### Connection 3: smap_dev
+- Name: `smap - Dev`
 - Host: `localhost`
 - Port: `5432`
-- Maintenance database: `kanban`
-- Username: `kanban_dev`
-- Password: `kanban_dev@2025`
+- Maintenance database: `smap`
+- Username: `smap_dev`
+- Password: `smap_dev@2025`
 
-#### Connection 4: kanban_readonly
-- Name: `kanban - Readonly`
+#### Connection 4: smap_readonly
+- Name: `smap - Readonly`
 - Host: `localhost`
 - Port: `5432`
-- Maintenance database: `kanban`
-- Username: `kanban_readonly`
-- Password: `kanban_readonly@2025`
+- Maintenance database: `smap`
+- Username: `smap_readonly`
+- Password: `smap_readonly@2025`
 
 3. Kiểm tra từng connection:
    - ✅ Tất cả đều kết nối thành công
-   - ✅ Trong cây Databases, CHỈ thấy `kanban`
+   - ✅ Trong cây Databases, CHỈ thấy `smap`
    - ✅ KHÔNG thấy `postgres`, `template0`, `template1`
 
 **✅ Checkpoint 7:** Tất cả 4 users hoạt động đúng như thiết kế
@@ -905,40 +905,40 @@ postgresql://username:password@host:port/database
 #### Owner (Migrations only)
 ```bash
 # Development/Local
-DATABASE_URL="postgresql://kanban_owner:Owner_SecureP@ss123!@localhost:5432/kanban"
+DATABASE_URL="postgresql://smap_owner:Owner_SecureP@ss123!@localhost:5432/smap"
 
 # Production (không nên expose ra ngoài)
-DATABASE_URL="postgresql://kanban_owner:Owner_SecureP@ss123!@10.0.1.5:5432/kanban"
+DATABASE_URL="postgresql://smap_owner:Owner_SecureP@ss123!@10.0.1.5:5432/smap"
 ```
 
 #### API (Production Application)
 ```bash
 # Production
-DATABASE_URL="postgresql://kanban_api:kanban_api@2025@10.0.1.5:5432/kanban"
+DATABASE_URL="postgresql://smap_api:smap_api@2025@10.0.1.5:5432/smap"
 
 # Development
-DATABASE_URL="postgresql://kanban_api:kanban_api@2025@localhost:5432/kanban"
+DATABASE_URL="postgresql://smap_api:smap_api@2025@localhost:5432/smap"
 
 # Docker
-DATABASE_URL="postgresql://kanban_api:kanban_api@2025@postgres:5432/kanban"
+DATABASE_URL="postgresql://smap_api:smap_api@2025@postgres:5432/smap"
 ```
 
 #### Dev (Developers)
 ```bash
 # Local development
-DATABASE_URL="postgresql://kanban_dev:kanban_dev@2025@localhost:5432/kanban"
+DATABASE_URL="postgresql://smap_dev:smap_dev@2025@localhost:5432/smap"
 
 # Dev server
-DATABASE_URL="postgresql://kanban_dev:kanban_dev@2025@dev.example.com:5432/kanban"
+DATABASE_URL="postgresql://smap_dev:smap_dev@2025@dev.example.com:5432/smap"
 ```
 
 #### Readonly (Reporting/Analytics)
 ```bash
 # Analytics tools
-DATABASE_URL="postgresql://kanban_readonly:kanban_readonly@2025@10.0.1.5:5432/kanban"
+DATABASE_URL="postgresql://smap_readonly:smap_readonly@2025@10.0.1.5:5432/smap"
 
 # BI tools
-DATABASE_URL="postgresql://kanban_readonly:kanban_readonly@2025@localhost:5432/kanban"
+DATABASE_URL="postgresql://smap_readonly:smap_readonly@2025@localhost:5432/smap"
 ```
 
 ### 8.3. Connection strings cho frameworks
@@ -949,8 +949,8 @@ DATABASE_URL="postgresql://kanban_readonly:kanban_readonly@2025@localhost:5432/k
 const ownerConfig = {
   host: 'localhost',
   port: 5432,
-  database: 'kanban',
-  username: 'kanban_owner',
+  database: 'smap',
+  username: 'smap_owner',
   password: 'Owner_SecureP@ss123!',
   dialect: 'postgres'
 };
@@ -959,8 +959,8 @@ const ownerConfig = {
 const apiConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
-  database: 'kanban',
-  username: 'kanban_api',
+  database: 'smap',
+  username: 'smap_api',
   password: process.env.DB_PASSWORD,
   dialect: 'postgres',
   pool: {
@@ -980,8 +980,8 @@ const apiConfig = {
 DATABASES_OWNER = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'kanban',
-        'USER': 'kanban_owner',
+        'NAME': 'smap',
+        'USER': 'smap_owner',
         'PASSWORD': 'Owner_SecureP@ss123!',
         'HOST': 'localhost',
         'PORT': '5432',
@@ -992,8 +992,8 @@ DATABASES_OWNER = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'kanban',
-        'USER': 'kanban_api',
+        'NAME': 'smap',
+        'USER': 'smap_api',
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': '5432',
@@ -1005,11 +1005,11 @@ DATABASES = {
 #### Go
 ```go
 // Owner (migrations)
-ownerDSN := "host=localhost port=5432 user=kanban_owner password=Owner_SecureP@ss123! dbname=kanban sslmode=disable"
+ownerDSN := "host=localhost port=5432 user=smap_owner password=Owner_SecureP@ss123! dbname=smap sslmode=disable"
 
 // API (production)
 apiDSN := fmt.Sprintf(
-    "host=%s port=5432 user=kanban_api password=%s dbname=kanban sslmode=require",
+    "host=%s port=5432 user=smap_api password=%s dbname=smap sslmode=require",
     os.Getenv("DB_HOST"),
     os.Getenv("DB_PASSWORD"),
 )
@@ -1018,15 +1018,15 @@ apiDSN := fmt.Sprintf(
 #### Java (JDBC)
 ```java
 // Owner (migrations)
-String ownerUrl = "jdbc:postgresql://localhost:5432/kanban";
+String ownerUrl = "jdbc:postgresql://localhost:5432/smap";
 Properties ownerProps = new Properties();
-ownerProps.setProperty("user", "kanban_owner");
+ownerProps.setProperty("user", "smap_owner");
 ownerProps.setProperty("password", "Owner_SecureP@ss123!");
 
 // API (production)
-String apiUrl = "jdbc:postgresql://" + System.getenv("DB_HOST") + ":5432/kanban";
+String apiUrl = "jdbc:postgresql://" + System.getenv("DB_HOST") + ":5432/smap";
 Properties apiProps = new Properties();
-apiProps.setProperty("user", "kanban_api");
+apiProps.setProperty("user", "smap_api");
 apiProps.setProperty("password", System.getenv("DB_PASSWORD"));
 ```
 
@@ -1038,9 +1038,9 @@ apiProps.setProperty("password", System.getenv("DB_PASSWORD"));
 # .env file (KHÔNG commit vào git!)
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=kanban
-DB_USER=kanban_api
-DB_PASSWORD=kanban_api@2025
+DB_NAME=smap
+DB_USER=smap_api
+DB_PASSWORD=smap_api@2025
 ```
 
 #### Connection pooling
@@ -1095,7 +1095,7 @@ sudo grep "listen_addresses" /etc/postgresql/18/main/postgresql.conf
 **Triệu chứng:**
 ```
 psql: error: connection to server at "localhost" (127.0.0.1), port 5432 failed: 
-FATAL: password authentication failed for user "kanban_api"
+FATAL: password authentication failed for user "smap_api"
 ```
 
 **Giải pháp:**
@@ -1105,7 +1105,7 @@ sudo -u postgres psql
 ```
 
 ```sql
-ALTER ROLE kanban_api WITH PASSWORD 'NewPassword123!';
+ALTER ROLE smap_api WITH PASSWORD 'NewPassword123!';
 \q
 ```
 
@@ -1126,20 +1126,20 @@ ERROR: permission denied for table users
 
 **Giải pháp:**
 ```bash
-sudo -u postgres psql -d kanban
+sudo -u postgres psql -d smap
 ```
 
 ```sql
 -- Kiểm tra owner của table
 \dt+ users
 
--- Nếu owner không phải kanban_owner, đổi owner
-ALTER TABLE users OWNER TO kanban_owner;
+-- Nếu owner không phải smap_owner, đổi owner
+ALTER TABLE users OWNER TO smap_owner;
 
 -- Cấp lại quyền cho các users khác
-GRANT SELECT, INSERT, UPDATE, DELETE ON users TO kanban_api;
-GRANT ALL PRIVILEGES ON users TO kanban_dev;
-GRANT SELECT ON users TO kanban_readonly;
+GRANT SELECT, INSERT, UPDATE, DELETE ON users TO smap_api;
+GRANT ALL PRIVILEGES ON users TO smap_dev;
+GRANT SELECT ON users TO smap_readonly;
 
 \q
 ```
@@ -1150,7 +1150,7 @@ GRANT SELECT ON users TO kanban_readonly;
 
 **Triệu chứng:**
 ```
-FATAL: pg_hba.conf rejects connection for host "192.168.1.50", user "kanban_api", database "kanban"
+FATAL: pg_hba.conf rejects connection for host "192.168.1.50", user "smap_api", database "smap"
 ```
 
 **Giải pháp:**
@@ -1161,7 +1161,7 @@ sudo nano /etc/postgresql/18/main/pg_hba.conf
 
 Thêm rule:
 ```
-host    kanban           kanban_api       192.168.1.50/32         md5
+host    smap           smap_api       192.168.1.50/32         md5
 ```
 
 ```bash
@@ -1191,16 +1191,16 @@ REVOKE CONNECT ON DATABASE template0 FROM PUBLIC;
 REVOKE CONNECT ON DATABASE template1 FROM PUBLIC;
 
 -- Thu hồi từ user cụ thể
-REVOKE ALL ON DATABASE postgres FROM kanban_api;
-REVOKE ALL ON DATABASE postgres FROM kanban_dev;
-REVOKE ALL ON DATABASE postgres FROM kanban_readonly;
+REVOKE ALL ON DATABASE postgres FROM smap_api;
+REVOKE ALL ON DATABASE postgres FROM smap_dev;
+REVOKE ALL ON DATABASE postgres FROM smap_readonly;
 
 \q
 ```
 
 ---
 
-### Vấn đề 6: Cannot create table (for kanban_dev)
+### Vấn đề 6: Cannot create table (for smap_dev)
 
 **Triệu chứng:**
 ```sql
@@ -1210,12 +1210,12 @@ ERROR: permission denied for schema public
 
 **Giải pháp:**
 ```bash
-sudo -u postgres psql -d kanban
+sudo -u postgres psql -d smap
 ```
 
 ```sql
 -- Cấp lại ALL quyền cho dev
-GRANT ALL PRIVILEGES ON SCHEMA public TO kanban_dev;
+GRANT ALL PRIVILEGES ON SCHEMA public TO smap_dev;
 
 -- Kiểm tra
 \dn+ public
@@ -1245,7 +1245,7 @@ SELECT usename, count(*) FROM pg_stat_activity GROUP BY usename;
 -- Kill connections cũ
 SELECT pg_terminate_backend(pid) 
 FROM pg_stat_activity 
-WHERE datname = 'kanban' 
+WHERE datname = 'smap' 
   AND state = 'idle' 
   AND state_change < NOW() - INTERVAL '5 minutes';
 
@@ -1285,10 +1285,10 @@ pwgen -s 32 1
 #### Lưu passwords an toàn
 ```bash
 # Sử dụng environment variables
-export kanban_OWNER_PASS='...'
-export kanban_API_PASS='...'
-export kanban_DEV_PASS='...'
-export kanban_READONLY_PASS='...'
+export smap_OWNER_PASS='...'
+export smap_API_PASS='...'
+export smap_DEV_PASS='...'
+export smap_READONLY_PASS='...'
 
 # Hoặc dùng secrets management
 # - AWS Secrets Manager
@@ -1299,7 +1299,7 @@ export kanban_READONLY_PASS='...'
 #### Đổi passwords định kỳ
 ```sql
 -- Đổi password cho user
-ALTER ROLE kanban_api WITH PASSWORD 'NewSecurePassword!';
+ALTER ROLE smap_api WITH PASSWORD 'NewSecurePassword!';
 ```
 
 ---
@@ -1309,11 +1309,11 @@ ALTER ROLE kanban_api WITH PASSWORD 'NewSecurePassword!';
 #### Giới hạn IP trong pg_hba.conf
 ```
 # KHÔNG làm thế này (quá mở)
-host    kanban           kanban_api       0.0.0.0/0               md5
+host    smap           smap_api       0.0.0.0/0               md5
 
 # Làm thế này (giới hạn IP cụ thể)
-host    kanban           kanban_api       192.168.1.100/32        md5
-host    kanban           kanban_api       10.0.1.0/24             md5
+host    smap           smap_api       192.168.1.100/32        md5
+host    smap           smap_api       10.0.1.0/24             md5
 ```
 
 #### Bật SSL/TLS
@@ -1344,7 +1344,7 @@ sudo systemctl restart postgresql
 
 Trong pg_hba.conf, đổi `host` thành `hostssl`:
 ```
-hostssl kanban           kanban_api       10.0.1.0/24             md5
+hostssl smap           smap_api       10.0.1.0/24             md5
 ```
 
 ---
@@ -1424,7 +1424,7 @@ WHERE rolname NOT LIKE 'pg_%';
 -- Kiểm tra connections
 SELECT usename, application_name, client_addr, state, query_start 
 FROM pg_stat_activity 
-WHERE datname = 'kanban';
+WHERE datname = 'smap';
 
 -- Kiểm tra quyền trên tables
 SELECT grantee, privilege_type 
@@ -1447,16 +1447,16 @@ DROP ROLE IF EXISTS old_user;
 #### Backup với pg_dump
 ```bash
 # Backup toàn bộ database (dùng owner user)
-pg_dump -U kanban_owner -h localhost -d kanban -F c -f kanban_backup_$(date +%Y%m%d).backup
+pg_dump -U smap_owner -h localhost -d smap -F c -f smap_backup_$(date +%Y%m%d).backup
 
 # Backup chỉ schema (không data)
-pg_dump -U kanban_owner -h localhost -d kanban --schema-only -f kanban_schema.sql
+pg_dump -U smap_owner -h localhost -d smap --schema-only -f smap_schema.sql
 
 # Backup chỉ data
-pg_dump -U kanban_owner -h localhost -d kanban --data-only -f kanban_data.sql
+pg_dump -U smap_owner -h localhost -d smap --data-only -f smap_data.sql
 
 # Backup một table cụ thể
-pg_dump -U kanban_owner -h localhost -d kanban -t users -F c -f users_backup.backup
+pg_dump -U smap_owner -h localhost -d smap -t users -F c -f users_backup.backup
 ```
 
 ---
@@ -1466,13 +1466,13 @@ pg_dump -U kanban_owner -h localhost -d kanban -t users -F c -f users_backup.bac
 #### Restore từ backup
 ```bash
 # Restore toàn bộ (dùng owner user)
-pg_restore -U kanban_owner -h localhost -d kanban -v kanban_backup_20250101.backup
+pg_restore -U smap_owner -h localhost -d smap -v smap_backup_20250101.backup
 
 # Restore với clean (xóa objects cũ trước)
-pg_restore -U kanban_owner -h localhost -d kanban -c -v kanban_backup.backup
+pg_restore -U smap_owner -h localhost -d smap -c -v smap_backup.backup
 
 # Restore chỉ một table
-pg_restore -U kanban_owner -h localhost -d kanban -t users -v users_backup.backup
+pg_restore -U smap_owner -h localhost -d smap -t users -v users_backup.backup
 ```
 
 ---
@@ -1481,16 +1481,16 @@ pg_restore -U kanban_owner -h localhost -d kanban -t users -v users_backup.backu
 
 ```bash
 # Tạo script backup tự động
-sudo nano /usr/local/bin/backup-kanban.sh
+sudo nano /usr/local/bin/backup-smap.sh
 ```
 
 ```bash
 #!/bin/bash
 
 # Configuration
-BACKUP_DIR="/var/backups/postgresql/kanban"
-DB_NAME="kanban"
-DB_USER="kanban_owner"
+BACKUP_DIR="/var/backups/postgresql/smap"
+DB_NAME="smap"
+DB_USER="smap_owner"
 DB_HOST="localhost"
 BACKUP_RETENTION_DAYS=7
 
@@ -1528,10 +1528,10 @@ fi
 
 ```bash
 # Phân quyền
-sudo chmod +x /usr/local/bin/backup-kanban.sh
+sudo chmod +x /usr/local/bin/backup-smap.sh
 
 # Test script
-sudo /usr/local/bin/backup-kanban.sh
+sudo /usr/local/bin/backup-smap.sh
 ```
 
 ---
@@ -1545,12 +1545,12 @@ sudo crontab -e
 
 Thêm dòng (backup hàng ngày lúc 2:00 AM):
 ```
-0 2 * * * /usr/local/bin/backup-kanban.sh
+0 2 * * * /usr/local/bin/backup-smap.sh
 ```
 
 Backup mỗi 6 giờ:
 ```
-0 */6 * * * /usr/local/bin/backup-kanban.sh
+0 */6 * * * /usr/local/bin/backup-smap.sh
 ```
 
 ```bash
@@ -1558,7 +1558,7 @@ Backup mỗi 6 giờ:
 sudo crontab -l
 
 # Xem log
-sudo tail -f /var/backups/postgresql/kanban/backup.log
+sudo tail -f /var/backups/postgresql/smap/backup.log
 ```
 
 ---
@@ -1568,14 +1568,14 @@ sudo tail -f /var/backups/postgresql/kanban/backup.log
 #### VACUUM và ANALYZE
 ```bash
 # Tạo script maintenance
-sudo nano /usr/local/bin/maintain-kanban.sh
+sudo nano /usr/local/bin/maintain-smap.sh
 ```
 
 ```bash
 #!/bin/bash
 
-DB_NAME="kanban"
-DB_USER="kanban_owner"
+DB_NAME="smap"
+DB_USER="smap_owner"
 LOG_FILE="/var/log/postgresql/maintenance.log"
 
 echo "$(date): Starting maintenance for $DB_NAME..." >> "$LOG_FILE"
@@ -1598,14 +1598,14 @@ echo "$(date): Maintenance completed" >> "$LOG_FILE"
 ```
 
 ```bash
-sudo chmod +x /usr/local/bin/maintain-kanban.sh
+sudo chmod +x /usr/local/bin/maintain-smap.sh
 
 # Thêm vào crontab (chạy hàng tuần)
 sudo crontab -e
 ```
 
 ```
-0 3 * * 0 /usr/local/bin/maintain-kanban.sh
+0 3 * * 0 /usr/local/bin/maintain-smap.sh
 ```
 
 ---
@@ -1616,7 +1616,7 @@ sudo crontab -e
 
 ```sql
 -- Kích thước database
-SELECT pg_size_pretty(pg_database_size('kanban'));
+SELECT pg_size_pretty(pg_database_size('smap'));
 
 -- Kích thước từng table
 SELECT 
@@ -1677,11 +1677,11 @@ LIMIT 10;
 
 ## FINAL CHECKLIST
 
-- [ ] Database `kanban` đã tạo thành công
-- [ ] User `kanban_owner` có full quyền, chỉ dùng cho migrations
-- [ ] User `kanban_api` có quyền CRUD, dùng cho production
-- [ ] User `kanban_dev` có quyền DDL, dùng cho developers
-- [ ] User `kanban_readonly` chỉ có quyền SELECT, dùng cho reporting
+- [ ] Database `smap` đã tạo thành công
+- [ ] User `smap_owner` có full quyền, chỉ dùng cho migrations
+- [ ] User `smap_api` có quyền CRUD, dùng cho production
+- [ ] User `smap_dev` có quyền DDL, dùng cho developers
+- [ ] User `smap_readonly` chỉ có quyền SELECT, dùng cho reporting
 - [ ] pg_hba.conf đã cấu hình đúng với security rules
 - [ ] PostgreSQL đã reload/restart
 - [ ] Test tất cả 4 users thành công
@@ -1754,8 +1754,8 @@ LIMIT 10;
 ### Cập nhật hướng dẫn này cho database khác
 
 Để áp dụng cho database khác, chỉ cần thay đổi:
-1. Tên database: `kanban` → `your_db_name`
-2. Tên users: `kanban_*` → `yourapp_*`
+1. Tên database: `smap` → `your_db_name`
+2. Tên users: `smap_*` → `yourapp_*`
 3. Passwords
 4. IP ranges trong pg_hba.conf
 
@@ -1763,18 +1763,18 @@ LIMIT 10;
 
 #### Thêm user mới (ví dụ: monitoring user)
 ```sql
-CREATE ROLE kanban_monitor WITH LOGIN PASSWORD 'Monitor_Pass!';
-GRANT CONNECT ON DATABASE kanban TO kanban_monitor;
-GRANT pg_monitor TO kanban_monitor;
+CREATE ROLE smap_monitor WITH LOGIN PASSWORD 'Monitor_Pass!';
+GRANT CONNECT ON DATABASE smap TO smap_monitor;
+GRANT pg_monitor TO smap_monitor;
 ```
 
 #### Tạo schema riêng cho từng module
 ```sql
-CREATE SCHEMA auth AUTHORIZATION kanban_owner;
-CREATE SCHEMA billing AUTHORIZATION kanban_owner;
+CREATE SCHEMA auth AUTHORIZATION smap_owner;
+CREATE SCHEMA billing AUTHORIZATION smap_owner;
 
-GRANT USAGE ON SCHEMA auth TO kanban_api;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA auth TO kanban_api;
+GRANT USAGE ON SCHEMA auth TO smap_api;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA auth TO smap_api;
 ```
 
 ---
