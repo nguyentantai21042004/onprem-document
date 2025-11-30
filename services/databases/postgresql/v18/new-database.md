@@ -112,7 +112,7 @@ sudo -u postgres psql
 
 ```sql
 -- Tạo database với encoding UTF8
-CREATE DATABASE smap 
+CREATE DATABASE "smap-project"
     WITH 
     ENCODING = 'UTF8'
     LC_COLLATE = 'en_US.UTF-8'
@@ -121,35 +121,35 @@ CREATE DATABASE smap
     CONNECTION LIMIT = -1;
 
 -- Thêm comment cho database (tùy chọn)
-COMMENT ON DATABASE smap IS 'Production database for smap application';
+COMMENT ON DATABASE "smap-project" IS 'Production database for smap project service';
 ```
 
 ### 1.3. Kiểm tra database đã tạo
 
 ```sql
 -- Liệt kê databases
-\l smap
+\l "smap-project"
 
 -- Hoặc query
 SELECT datname, pg_encoding_to_char(encoding), datcollate, datctype 
 FROM pg_database 
-WHERE datname = 'smap';
+WHERE datname = 'smap-project';
 ```
 
 **Kết quả mong đợi:**
 ```
   datname  | pg_encoding_to_char |   datcollate    |    datctype     
 -----------+---------------------+-----------------+-----------------
- smap     | UTF8                | en_US.UTF-8     | en_US.UTF-8
+ smap-project     | UTF8                | en_US.UTF-8     | en_US.UTF-8
 ```
 
 ### 1.4. Kết nối vào database mới
 
 ```sql
-\c smap
+\c "smap-project"
 ```
 
-**Checkpoint 1:** Database `smap` đã được tạo thành công
+**Checkpoint 1:** Database `smap-project` đã được tạo thành công
 
 ---
 
@@ -180,17 +180,17 @@ COMMENT ON ROLE smap_owner IS 'Database owner - Use for migrations and schema ch
 
 ```sql
 -- Chuyển ownership database sang smap_owner
-ALTER DATABASE smap OWNER TO smap_owner;
+ALTER DATABASE "smap-project" OWNER TO smap_owner;
 
 -- Kiểm tra
-\l smap
+\l "smap-project"
 ```
 
 ### 2.3. Cấp quyền đầy đủ trong database
 
 ```sql
 -- Kết nối vào database smap
-\c smap
+\c "smap-project"
 
 -- Cấp ALL quyền trên schema public
 GRANT ALL PRIVILEGES ON SCHEMA public TO smap_owner;
@@ -361,7 +361,7 @@ COMMENT ON ROLE smap_dev IS 'Developer user - Full access for testing and develo
 
 ```sql
 -- Cho phép kết nối vào smap
-GRANT CONNECT ON DATABASE smap TO smap_dev;
+GRANT CONNECT ON DATABASE "smap-project" TO smap_dev;
 
 -- Thu hồi quyền vào database khác
 REVOKE ALL ON DATABASE postgres FROM smap_dev;
@@ -432,7 +432,7 @@ COMMENT ON ROLE smap_readonly IS 'Read-only user for reporting and analytics';
 
 ```sql
 -- Cho phép kết nối vào smap
-GRANT CONNECT ON DATABASE smap TO smap_readonly;
+GRANT CONNECT ON DATABASE "smap-project" TO smap_readonly;
 
 -- Thu hồi quyền vào database khác
 REVOKE ALL ON DATABASE postgres FROM smap_readonly;
